@@ -21,21 +21,21 @@
 
 #### データ構造
 
-| フィールド名   | 型        | 説明                         |
-| -------------- | --------- | ---------------------------- |
-| `id`           | string    | UUID                         |
-| `title`        | string    | 記事タイトル                 |
-| `slug`         | string    | URLスラッグ                  |
-| `created_at`   | timestamp | 作成日時                     |
-| `published_at` | timestamp | 公開日時                     |
-| `updated_at`   | timestamp | 最終更新日時                 |
-| `category`     | string    | カテゴリー                   |
-| `content`      | string    | Markdownテキスト             |
-| `isPublic`     | boolean   | 公開（そうでなければ下書き） |
+| フィールド名   | 型        | 説明                         | 必須 |
+| -------------- | --------- | ---------------------------- | ---- |
+| `id`           | string    | UUID                         | T    |
+| `title`        | string    | 記事タイトル                 | F    |
+| `slug`         | string    | URLスラッグ                  | F    |
+| `created_at`   | timestamp | 作成日時                     | T    |
+| `published_at` | timestamp | 公開日時                     | F    |
+| `updated_at`   | timestamp | 最終更新日時                 | F    |
+| `category`     | string    | カテゴリー                   | F    |
+| `content`      | string    | Markdownテキスト             | F    |
+| `is_public`     | boolean   | 公開（そうでなければ下書き） | T    |
 
 **インデックス**
 
-- `slug` にユニークインデックスを設定（記事のURLに使用するため）
-- `published_at` にインデックスを設定（公開日時順での表示に使用するため）
+- `slug` にユニークインデックスを**自動**設定（記事のURLに使用するため）
+- `published_at` と `is_public` の複合インデックスを設定（公開・非公開を区別して、バックナンバー表示や公開日時順での表示に使用するため）
+- `updated_at` にインデックスを設定（管理者ページで更新日時順での表示に使用するため）
 - `category` にインデックスを設定（カテゴリー別記事の表示に使用するため）
-- `isPublic` にインデックスを設定（公開記事と下書きを分けて取得するため）
