@@ -12,6 +12,7 @@ export async function fetchPostBySlug(slug: string): Promise<Post | null> {
     `;
     return post[0];
   } catch (error) {
+    console.error("Error fetching post by slug:", error);
     throw new Error("Failed to fetch post by slug");
   }
 }
@@ -37,7 +38,7 @@ export async function fetchPostsMetaData(
     `;
     return posts;
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching posts metadata:", error);
     throw new Error("Failed to fetch posts metadata");
   }
 }
