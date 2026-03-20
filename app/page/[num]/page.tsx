@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { fetchPostsMetaData } from "@/lib/data";
 
-export default async function Page() {
-  const posts = await fetchPostsMetaData(0, 7, false, "desc");
-
+export default async function Page(props: { params: Promise<{ num: string }> },
+) {
+  const params = await props.params;
+  const num = parseInt(params.num, 10);
+  const posts = await fetchPostsMetaData((num - 1) * 7, 7, false, "desc");
   return (
     <div>
       <h1>ブログ記事一覧</h1>

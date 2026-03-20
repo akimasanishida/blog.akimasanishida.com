@@ -61,6 +61,24 @@ const posts: Post[] = [
   },
 ];
 
+function appendSpamPosts(posts: Post[]): Post[] {
+  for (let i = 3; i <= 30; i++) {
+    posts.push({
+      title: `テスト記事${i}`,
+      slug: `test-post-${i}`,
+      created_at: new Date(),
+      published_at: new Date(Date.now() + i * 1000 * 60), // 公開日時を少しずつ未来に設定
+      updated_at: null,
+      category: "Test",
+      content: `## テスト記事${i}
+
+      これはテスト記事${i}です。`,
+      is_public: true,
+    });
+  }
+  return posts;
+}
+
 async function seedPosts() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`; // UUID生成のための拡張機能を有効化
   await sql`
@@ -82,8 +100,10 @@ async function seedPosts() {
   await sql`CREATE INDEX IF NOT EXISTS idx_posts_updated_at ON posts(updated_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)`;
 
+  const postsToInsert = appendSpamPosts(posts);
+
   const insertedPosts = await Promise.all(
-    posts.map(
+    postsToInsert.map(
       (post) => sql`
         INSERT INTO posts (title, slug, created_at, published_at, updated_at, category, content, is_public)
         VALUES (${post.title}, ${post.slug}, ${post.created_at}, ${post.published_at}, ${post.updated_at}, ${post.category}, ${post.content}, ${post.is_public})
