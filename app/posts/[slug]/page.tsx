@@ -1,4 +1,4 @@
-import { getPostBySlug } from "@/lib/data";
+import { fetchPostBySlug } from "@/lib/data";
 import { notFound } from "next/navigation";
 
 export default async function Page(props: {
@@ -6,7 +6,7 @@ export default async function Page(props: {
 }) {
   const paramas = await props.params;
   const slug = paramas.slug;
-  const post = await getPostBySlug(slug);
+  const post = await fetchPostBySlug(slug);
 
   if (!post) {
     notFound();
