@@ -6,7 +6,7 @@ const sql = postgres(process.env.DATABASE_URL!, { ssl: "require" });
 export async function fetchPostBySlug(slug: string): Promise<Post | null> {
   try {
     const post = await sql<Post[]>`
-      SELECT *
+      SELECT id, title, slug, created_at, published_at, updated_at, category, content, is_public
       FROM posts
       WHERE slug = ${slug}
     `;
@@ -27,7 +27,7 @@ export async function fetchPostsMetaData(
 
   try {
     const posts = await sql<Post[]>`
-      SELECT id, title, slug, published_at, updated_at, category
+      SELECT id, title, slug, created_at, published_at, updated_at, category
       FROM posts
       ${includeDraft ? sql`` : sql`WHERE is_public = true`}
       ORDER BY 
