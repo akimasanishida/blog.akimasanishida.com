@@ -13,15 +13,26 @@ const posts: Post[] = [
     category: "Test",
     content: `## あいさつ
 
-    こんにちは、これはテスト記事です。
+こんにちは、これはテスト記事です。
 
-    **テストアイテム**
-    
-    - アイテム1
-    - アイテム2
-    - アイテム3
-    
-    [リンク](https://example.com)`,
+**テストアイテム**
+
+- アイテム1
+- アイテム2
+- アイテム3
+
+[リンク](https://example.com) です。また、これは数式です:
+
+$$
+p(E(i)) = \\frac{1}{Z} \\exp(-\\beta E(i))
+$$
+ここで、Zは
+$$
+Z = \\sum_{i} \\exp(-\\beta E(i))
+$$
+また、$\\beta$は逆温度です（$\\beta = 1 / (k_B T)$）。
+
+参考：<a href="https://ja.wikipedia.org/wiki/%E6%AD%A3%E6%BA%96%E9%9B%86%E5%9B%A3" target="_blank" rel="noopener noreferrer">正規集団</a> ← HTML（\`a\` タグ）を直接利用する例。`,
     is_public: true,
   },
   {
@@ -33,18 +44,18 @@ const posts: Post[] = [
     category: "Test",
     content: `## これは別のテスト記事です
 
-    **内容の例**
-    
-    1. 項目A
-    2. 項目B
-    3. 項目C
-    
-    > これは引用です。
-    
-    \`\`\`javascript
-    console.log("Hello, world!");
-    \`\`\`
-    `,
+**内容の例**
+
+1. 項目A
+2. 項目B
+3. 項目C
+
+> これは引用です。
+
+\`\`\`javascript
+console.log("Hello, world!");
+\`\`\`
+`,
     is_public: true,
   },
   {
