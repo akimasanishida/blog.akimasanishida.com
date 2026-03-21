@@ -7,8 +7,8 @@ const posts: Post[] = [
   {
     title: "テスト記事1",
     slug: "test-post-1",
-    created_at: new Date(),
-    published_at: new Date(),
+    created_at: new Date().toISOString(),
+    published_at: new Date().toISOString(),
     updated_at: null,
     category: "Test",
     content: `## あいさつ
@@ -38,9 +38,9 @@ $$
   {
     title: "テスト記事2",
     slug: "test-post-2",
-    created_at: new Date(),
-    published_at: new Date(),
-    updated_at: new Date(),
+    created_at: new Date().toISOString(),
+    published_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     category: "Test",
     content: `## これは別のテスト記事です
 
@@ -61,7 +61,7 @@ console.log("Hello, world!");
   {
     title: "テストの下書き記事",
     slug: "test-draft-post",
-    created_at: new Date(),
+    created_at: new Date().toISOString(),
     published_at: null,
     updated_at: null,
     category: "Test",
@@ -77,8 +77,8 @@ function appendSpamPosts(posts: Post[]): Post[] {
     posts.push({
       title: `テスト記事${i}`,
       slug: `test-post-${i}`,
-      created_at: new Date(),
-      published_at: new Date(Date.now() + i * 1000 * 60), // 公開日時を少しずつ未来に設定
+      created_at: new Date().toISOString(),
+      published_at: new Date(Date.now() + i * 1000 * 60).toISOString(), // 公開日時を少しずつ未来に設定
       updated_at: null,
       category: "Test",
       content: `## テスト記事${i}
@@ -90,6 +90,10 @@ function appendSpamPosts(posts: Post[]): Post[] {
   return posts;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function seedPosts() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`; // UUID生成のための拡張機能を有効化
   await sql`
@@ -97,9 +101,9 @@ async function seedPosts() {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       title VARCHAR(255),
       slug VARCHAR(255) UNIQUE,
-      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-      published_at TIMESTAMP,
-      updated_at TIMESTAMP,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      published_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ,
       category VARCHAR(100),
       content TEXT,
       is_public BOOLEAN NOT NULL DEFAULT false
@@ -113,16 +117,17 @@ async function seedPosts() {
 
   const postsToInsert = appendSpamPosts(posts);
 
-  const insertedPosts = await Promise.all(
-    postsToInsert.map(
-      (post) => sql`
-        INSERT INTO posts (title, slug, created_at, published_at, updated_at, category, content, is_public)
-        VALUES (${post.title}, ${post.slug}, ${post.created_at}, ${post.published_at}, ${post.updated_at}, ${post.category}, ${post.content}, ${post.is_public})
-        ON CONFLICT (slug) DO NOTHING
-        RETURNING id;
-      `,
-    ),
-  );
+  const insertedPosts = [];
+  for (const post of postsToInsert) {
+    const insertedPost = await sql`
+      INSERT INTO posts (title, slug, created_at, published_at, updated_at, category, content, is_public)
+      VALUES (${post.title}, ${post.slug}, ${post.created_at}, ${post.published_at}, ${post.updated_at}, ${post.category}, ${post.content}, ${post.is_public})
+      ON CONFLICT (slug) DO NOTHING
+      RETURNING id;
+    `;
+    insertedPosts.push(insertedPost);
+    await sleep(150);
+  }
 
   return insertedPosts;
 }
