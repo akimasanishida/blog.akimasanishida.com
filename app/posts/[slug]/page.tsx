@@ -1,5 +1,8 @@
 import { fetchPostBySlug } from "@/lib/data";
 import { notFound } from "next/navigation";
+import { renderMarkdownToHTML } from "@/lib/markdown";
+import "katex/dist/katex.min.css";
+import "prism-themes/themes/prism-one-dark.css";
 
 export default async function Page(props: {
   params: Promise<{ slug: string }>;
@@ -12,11 +15,13 @@ export default async function Page(props: {
     notFound();
   }
 
+  const contentHtml = await renderMarkdownToHTML(post.content || "");
+
   // TODO: This is just for development rendering. We will add more features later.
   return (
     <div>
       <h1>{post.title}</h1>
-      <p>{post.content}</p>
+      <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
     </div>
   );
 }
