@@ -137,6 +137,9 @@
 .article h4 {
   @apply text-lg my-4 font-bold;
 }
+[id] {
+  @apply scroll-mt-20;
+}
 .article p {
   @apply leading-normal mb-2;
 }
