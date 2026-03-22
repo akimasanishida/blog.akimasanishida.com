@@ -129,13 +129,28 @@
 }
 
 .article h2 {
-  @apply text-2xl mb-2 font-bold;
+  @apply text-2xl my-4 font-bold;
 }
 .article h3 {
-  @apply text-xl mb-2 font-bold;
+  @apply text-xl my-4 font-bold;
+}
+.article h4 {
+  @apply text-lg my-4 font-bold;
+}
+.article p {
+  @apply leading-normal mb-2;
 }
 .article p a {
   @apply text-blue-500 underline;
+}
+.article dl {
+  @apply my-2;
+}
+.article dt {
+  @apply font-bold;
+}
+.article dd {
+  @apply ml-6 mb-1;
 }
 .article ul {
   @apply list-disc list-inside ml-3 mt-2 mb-2;
@@ -148,4 +163,15 @@
 }
 .article blockquote {
   @apply border-l-4 border-(--muted-foreground) pl-4 py-1 my-4 text-(--muted-foreground);
+}
+.article hr {
+  @apply border-t border-(--border) my-4 shadow-lg;
+}
+/* 表のためのスタイル */
+.article table {
+  @apply my-4;
+}
+.article th,
+.article td {
+  @apply border border-(--border) px-4 py-2;
 }
