@@ -1,10 +1,10 @@
 export interface Post {
-  id?: number;
+  id?: string;
   title: string | null;
   slug: string | null;
-  created_at: Date;
-  published_at: Date | null;
-  updated_at: Date | null;
+  created_at: string;
+  published_at: string | null;
+  updated_at: string | null;
   category: string | null;
   content: string | null;
   is_public: boolean;
