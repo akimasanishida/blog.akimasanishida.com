@@ -170,11 +170,21 @@
 .article hr {
   @apply border-t border-(--border) my-4 shadow-lg;
 }
-/* 表のためのスタイル */
+/* 表 */
 .article table {
   @apply my-4;
 }
 .article th,
 .article td {
   @apply border border-(--border) px-4 py-2;
+}
+/* 画像 */
+.article figure {
+  @apply my-2;
+}
+.article img {
+  @apply justify-center mx-auto max-w-full md:max-w-[70%];
+}
+.article figcaption {
+  @apply text-center text-(--muted-foreground) mt-1;
 }
