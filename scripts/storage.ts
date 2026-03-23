@@ -1,6 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { readFile } from "node:fs/promises";
-import mime from "mime-types";
 
 async function main() {
   console.log("=== Upload Test Image ===");
@@ -24,7 +23,7 @@ async function main() {
         Bucket: process.env.STORAGE_BUCKET_NAME!,
         Key: "images/smile.png",
         Body: fileBuffer,
-        ContentType: mime.lookup("./scripts/smile.png"),
+        ContentType: "image/png",
       }),
     );
   } catch (error) {
