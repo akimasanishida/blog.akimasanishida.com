@@ -1,23 +1,10 @@
-import Link from "next/link";
 import { fetchPostsMetaData } from "@/lib/data";
+import PostsList from "@/components/PostsList";
 
 export default async function Page() {
   const posts = await fetchPostsMetaData(0, 7, false, "desc");
 
   return (
-    <div>
-      <h1>ブログ記事一覧</h1>
-      <ul>
-        {posts?.map((post) => (
-          <li key={post.id}>
-            <Link href={`/posts/${post.slug}`}>{post.title}</Link> -{" "}
-            {post.published_at
-              ? new Date(post.published_at).toLocaleDateString()
-              : "公開日時不明"}{" "}
-            - カテゴリー: {post.category}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <PostsList title="ブログ記事一覧" posts={posts} />
   );
 }
