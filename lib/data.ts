@@ -42,3 +42,19 @@ export async function fetchPostsMetaData(
     throw new Error("Failed to fetch posts metadata");
   }
 }
+
+export async function fetchTotalPostsCount(
+  includeDraft: boolean = false,
+): Promise<number> {
+  try {
+    const result = await sql<{ count: number }[]>`
+      SELECT COUNT(*) AS count
+      FROM posts
+      ${includeDraft ? sql`` : sql`WHERE is_public = true`}
+    `;
+    return result[0].count;
+  } catch (error) {
+    console.error("Error fetching total posts count:", error);
+    throw new Error("Failed to fetch total posts count");
+  }
+}
