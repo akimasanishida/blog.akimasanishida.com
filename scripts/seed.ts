@@ -1,5 +1,7 @@
 import postgres from "postgres";
 import type { Post } from "@/types/posts";
+import type { User } from "@/types/users";
+import bcrypt from "bcrypt";
 
 const sql = postgres(process.env.DATABASE_URL!, { ssl: "require" });
 
@@ -201,6 +203,14 @@ function appendSpamPosts(posts: Post[]): Post[] {
   return posts;
 }
 
+const users: User[] = [
+  {
+    email: "admin@example.com",
+    password: "password",
+  }
+];
+
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -234,7 +244,6 @@ async function seedPosts() {
       INSERT INTO posts (title, slug, created_at, published_at, updated_at, category, content, is_public)
       VALUES (${post.title}, ${post.slug}, ${post.created_at}, ${post.published_at}, ${post.updated_at}, ${post.category}, ${post.content}, ${post.is_public})
       ON CONFLICT (slug) DO NOTHING
-      RETURNING id;
     `;
     insertedPosts.push(insertedPost);
     await sleep(150);
@@ -243,11 +252,37 @@ async function seedPosts() {
   return insertedPosts;
 }
 
+async function seedUsers() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL
+    );
+  `;
+
+  const insertedUsers = [];
+  for (const user of users) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    const insertedUser = await sql`
+      INSERT INTO users (email, password)
+      VALUES (${user.email}, ${hashedPassword})
+      ON CONFLICT (email) DO NOTHING
+    `;
+    insertedUsers.push(insertedUser);
+    await sleep(150);
+  }
+
+  return insertedUsers;
+}
+
 async function main() {
   console.log("Seeding database...");
   try {
     const result = await seedPosts();
     console.log({ message: "Database seeded successfully", result });
+    const userResult = await seedUsers();
+    console.log({ message: "Users seeded successfully", userResult });
   } catch (error) {
     console.error({ error });
   } finally {
