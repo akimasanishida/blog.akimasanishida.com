@@ -1,7 +1,10 @@
-export default function Page() {
+import { PostsTable } from "./page-client";
+
+export default async function Page() {
   return (
-    <div>
+    <>
       <h1>Admin Page</h1>
-    </div>
+      <PostsTable />
+    </>
   );
 }
