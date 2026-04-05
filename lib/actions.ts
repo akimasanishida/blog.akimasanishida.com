@@ -2,7 +2,6 @@
 
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
-import { fetchPostsMetaData } from "@/lib/data";
 
 export async function authenticate(
   prevState: string | undefined,
@@ -21,13 +20,4 @@ export async function authenticate(
     }
     throw error;
   }
-}
-
-export async function fetchAdminPostsMetaData(
-  startFrom: number,
-  numberOfPosts: number,
-  includeDraft: boolean,
-  order: "asc" | "desc",
-) {
-  return fetchPostsMetaData(startFrom, numberOfPosts, includeDraft, order);
 }
