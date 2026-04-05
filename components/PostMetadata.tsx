@@ -1,4 +1,5 @@
 import { Calendar, RotateCcw } from "lucide-react";
+import { optionsLocaleString } from "@/lib/definitions";
 
 export default function PostMetadata({
   publishedAt,
@@ -9,14 +10,6 @@ export default function PostMetadata({
   updatedAt?: string | null;
   category?: string | null;
 }) {
-  const optionsLocaleString: Intl.DateTimeFormatOptions = {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-  };
 
   const strPublishedAt = publishedAt
     ? new Date(publishedAt).toLocaleString("ja-JP", optionsLocaleString)
