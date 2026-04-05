@@ -27,7 +27,7 @@ export async function fetchPostsMetaData(
 
   try {
     const posts = await sql<Post[]>`
-      SELECT id, title, slug, created_at, published_at, updated_at, category
+      SELECT id, title, slug, created_at, published_at, updated_at, category, is_public
       FROM posts
       ${includeDraft ? sql`` : sql`WHERE is_public = true`}
       ORDER BY 
