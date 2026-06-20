@@ -1,0 +1,38 @@
+# 開発ガイド
+
+> セットアップ手順の詳細は [`../README.md`](../README.md)、AI 向け規約は [`../CLAUDE.md`](../CLAUDE.md)。
+> 本書はそれらと重複しない範囲で、開発フローとコマンドの「意図」を補う。
+
+## コマンド
+
+| コマンド | 用途 |
+| --- | --- |
+| `pnpm dev` | 開発サーバー |
+| `pnpm build` | 本番ビルド |
+| `pnpm lint` | ESLint（CI と同等。PR 前に必須） |
+| `npx tsc --noEmit` | 型チェック（CI には無いので手元で実施推奨） |
+| `pnpm docs:build` | `docs/*.md` から人間向け HTML を `docs/_site/` に生成 |
+| `pnpm db:seed` | DB 初期化＋モック投入 ⚠️ ローカル専用・要確認 |
+| `pnpm storage:upload` | テスト画像アップロード ⚠️ ローカル専用・要確認 |
+
+## ドキュメント運用（重要）
+
+- **正本は Markdown**（`docs/`）。AI が読み PR で diff するため。人間向け HTML は `pnpm docs:build` で生成（`docs/_site/`、**git 管理外**）。
+- 形式戦略の根拠（MD ingest / HTML output）は [decisions/](./decisions/README.md) を参照。
+- **ルート/スキーマを変えたら**、[routing.md](./routing.md) の状態欄・[data-model.md](./data-model.md) のリンクを**同じ PR で更新**。
+  - `app/**/page.tsx`・`types/*.ts`・`scripts/seed.ts` を編集すると、Claude Code の PostToolUse フック
+    （`.claude/hooks/docs-reminder.sh`）が docs 更新を**自動リマインド**する（非ブロッキング）。
+- ドキュメントに**事実の写しを増やさない**（事実は code が SoT、docs はリンク＋意図）。
+
+### HTML プレビュー
+`pnpm docs:build` 後、`docs/_site/index.html` をブラウザで開く（`file://` でも可）。
+
+## ワークフロー（Human on the loop）
+
+- ブランチは Issue 単位（既存命名 `#8_admin_posts_list` に倣う）。`main` で直接作業しない。
+- 機能実装は plan mode で計画 → 承認 → 実装。
+- PR 前に `pnpm lint`（必要なら `npx tsc --noEmit`）。PR は [`../.github/pull_request_template.md`](../.github/pull_request_template.md) に従う。
+- 破壊的スクリプト・push・PR 作成・依存変更は確認プロンプトが出る（[`../.claude/settings.json`](../.claude/settings.json) の `ask`）。
+
+## 既知の負債
+[roadmap.md](./roadmap.md) の「既知の負債」を参照（テスト未整備、next-auth beta、スキーマ SoT 等）。
