@@ -1,4 +1,5 @@
 ---
+name: pre-pr
 description: PR 前の定型検証（lint + 型チェック）をまとめて実行する
 ---
 
