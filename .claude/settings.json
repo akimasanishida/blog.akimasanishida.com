@@ -12,13 +12,13 @@
       "Bash(git log*)",
       "Bash(git branch*)",
       "Bash(gh pr view*)",
-      "Bash(gh issue view*)"
+      "Bash(gh issue view*)",
+      "Bash(git push*)",
+      "Bash(gh pr create*)"
     ],
     "ask": [
       "Bash(pnpm db:seed*)",
       "Bash(pnpm storage:upload*)",
-      "Bash(git push*)",
-      "Bash(gh pr create*)",
       "Bash(pnpm add*)",
       "Bash(pnpm remove*)"
     ],
