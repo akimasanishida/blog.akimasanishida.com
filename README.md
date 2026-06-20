@@ -4,6 +4,11 @@
 
 現行のレポジトリは [こちら](https://github.com/akimasanishida/blog)。
 
+## ドキュメント
+
+プロジェクト全体のドキュメントは [`docs/`](./docs/README.md) を参照（アーキテクチャ・認証・データモデル・ロードマップ・設計判断など）。
+人間向けの閲覧用 HTML は `pnpm docs:build` で `docs/_site/` に生成できます。
+
 ## 技術スタック
 
 - Next.js App Router (React, TypeScript)
