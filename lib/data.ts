@@ -22,17 +22,24 @@ export async function fetchPostsMetaData(
   numberOfPosts: number,
   includeDraft: boolean = false,
   order: "asc" | "desc" = "desc",
+  sortBy: "published_at" | "updated_at" = "published_at",
 ): Promise<Post[] | null> {
   const direction = order === "asc" ? sql`ASC` : sql`DESC`;
+  // 更新日時ソートは updated_at → published_at → created_at の順でフォールバック
+  // （公開済み未更新は published_at、下書きは created_at に落ちる）
+  const sortExpr =
+    sortBy === "updated_at"
+      ? sql`COALESCE(updated_at, published_at, created_at)`
+      : sql`COALESCE(published_at, created_at)`;
 
   try {
     const posts = await sql<Post[]>`
       SELECT id, title, slug, created_at, published_at, updated_at, category, is_public
       FROM posts
       ${includeDraft ? sql`` : sql`WHERE is_public = true`}
-      ORDER BY 
+      ORDER BY
         ${includeDraft ? sql`is_public ASC, ` : sql``}
-        published_at ${direction}
+        ${sortExpr} ${direction}
       OFFSET ${Math.max(0, startFrom)}
       LIMIT ${numberOfPosts}
     `;
