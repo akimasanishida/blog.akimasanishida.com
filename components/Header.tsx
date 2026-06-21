@@ -26,18 +26,14 @@ export default async function Header() {
       <nav className="flex items-center space-x-4 hidden md:block">
         <ul className="list-none flex flex-row m-0 p-0 items-center gap-4">
           <li>
-            <Link href="/about">
-              <Button variant="outline" size="lg">
-                ブログについて
-              </Button>
-            </Link>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/about">ブログについて</Link>
+            </Button>
           </li>
           <li>
-            <Link href="/admin">
-              <Button variant="outline" size="lg">
-                管理用
-              </Button>
-            </Link>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/admin">管理用</Link>
+            </Button>
           </li>
           <li>
             {isLoggedIn ? (
@@ -52,11 +48,9 @@ export default async function Header() {
                 </Button>
               </form>
             ) : (
-              <Link href="/login">
-                <Button variant="outline" size="lg">
-                  ログイン
-                </Button>
-              </Link>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/login">ログイン</Link>
+              </Button>
             )}
           </li>
           <li>
