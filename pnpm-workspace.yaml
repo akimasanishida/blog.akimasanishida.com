@@ -1,7 +1,6 @@
 allowBuilds:
   bcrypt: true
   esbuild: true
-  msw: true
   sharp: true
   unrs-resolver: true
 ignoredBuiltDependencies:
@@ -9,4 +8,14 @@ ignoredBuiltDependencies:
   - unrs-resolver
 onlyBuiltDependencies:
   - bcrypt
-  - msw
+# dev/ビルドツール経由の推移的依存（本番ランタイム非依存）の脆弱性をパッチ版へ固定。
+# 複数メジャーが同居するものはメジャー指定キーで個別固定する。
+overrides:
+  postcss: '>=8.5.10'
+  '@babel/core': '>=7.29.1'
+  esbuild: '>=0.28.1'
+  js-yaml: '>=4.1.2'
+  picomatch@2: '2.3.2'
+  picomatch@4: '4.0.4'
+  brace-expansion@1: '1.1.13'
+  brace-expansion@5: '5.0.6'
