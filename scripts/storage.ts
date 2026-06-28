@@ -21,7 +21,7 @@ async function main() {
     await s3.send(
       new PutObjectCommand({
         Bucket: process.env.STORAGE_BUCKET_NAME!,
-        Key: "images/smile.png",
+        Key: "media/smile.png",
         Body: fileBuffer,
         ContentType: "image/png",
       }),
@@ -29,7 +29,7 @@ async function main() {
   } catch (error) {
     console.error("Failed to upload file: ", error);
   }
-  console.log("Uploaded as images/smile.png");
+  console.log("Uploaded as media/smile.png");
 }
 
 main();

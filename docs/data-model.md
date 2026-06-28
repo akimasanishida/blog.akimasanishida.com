@@ -8,6 +8,14 @@
 - **posts**: アプリ型 [`types/posts.ts`](../types/posts.ts) / DDL [`scripts/seed.ts`](../scripts/seed.ts)（`CREATE TABLE posts`）
 - **users**: アプリ型 [`types/users.ts`](../types/users.ts) / DDL [`scripts/seed.ts`](../scripts/seed.ts)（`CREATE TABLE users`）
 
+## メディア（DB 外）
+
+画像・動画・音声は **DB ではなく S3 互換ストレージ（本番 R2）** に保存し、メタデータ用テーブルは持たない。
+保存先はバケット内の `media/` prefix（= media フォルダ）に統一。一覧は `ListObjectsV2`（`Prefix: media/`）で
+直接走査して取得する（取得元: [`lib/storage.ts`](../lib/storage.ts)、
+アプリ型 [`types/media.ts`](../types/media.ts)）。管理は `/admin/media`（[routing.md](./routing.md)）。
+Markdown 内の参照パス→公開 URL 変換は [`lib/markdown.ts`](../lib/markdown.ts)。
+
 ## クエリ
 
 posts の読み取りは [`lib/data.ts`](../lib/data.ts) に集約:
