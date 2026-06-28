@@ -7,7 +7,7 @@
 | 要素 | 本番採用 | 用途 |
 | --- | --- | --- |
 | PostgreSQL | [Neon](https://neon.com/) | posts / users の永続化。SSL 必須（`ssl: "require"`） |
-| S3 互換ストレージ | [Cloudflare R2](https://developers.cloudflare.com/r2/) | 記事内画像。`@aws-sdk/client-s3` で操作 |
+| S3 互換ストレージ | [Cloudflare R2](https://developers.cloudflare.com/r2/) | 記事内メディア（画像・動画・音声、`media/` prefix）。`@aws-sdk/client-s3` で操作。管理は `/admin/media`（[routing.md](./routing.md)） |
 | ホスティング | Vercel 想定（`.gitignore` に `.vercel`） | Next.js のデプロイ |
 
 ## 環境変数

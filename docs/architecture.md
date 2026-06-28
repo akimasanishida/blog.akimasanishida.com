@@ -6,7 +6,7 @@
 
 - **Next.js 16 App Router**（React 19 / TypeScript strict） — SSR/RSC ベース
 - **PostgreSQL**（本番 [Neon](https://neon.com/)） — `postgres` パッケージで直接アクセス（ORM なし）
-- **S3 互換ストレージ**（本番 [Cloudflare R2](https://developers.cloudflare.com/r2/)） — 記事内画像
+- **S3 互換ストレージ**（本番 [Cloudflare R2](https://developers.cloudflare.com/r2/)） — 記事内メディア（画像・動画・音声）
 - **認証**: next-auth v5（beta）+ bcrypt
 - **UI**: shadcn（[`../components.json`](../components.json)・style `radix-nova`） + Tailwind CSS v4
 - **Markdown**: unified/remark/rehype パイプライン
@@ -39,6 +39,7 @@
 
 ### 管理: `/admin`（認証必須）
 - [`proxy.ts`](../proxy.ts) のミドルウェアが `/admin/*` を保護。未ログインは `/login` へ。詳細は [auth.md](./auth.md)。
+- `/admin/media`: R2 メディアの一覧・アップロード・削除・リネーム（[`lib/storage.ts`](../lib/storage.ts) / [routing.md](./routing.md)）。
 
 ## 設計上の要点
 - **ORM を使わず** `postgres` のタグ付きテンプレートで SQL を直接記述（`${}` 補間で自動エスケープ）。
