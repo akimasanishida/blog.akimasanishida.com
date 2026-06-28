@@ -27,55 +27,57 @@ export function PaginationForPages({
   currentSearchParams: URLSearchParams;
 }) {
   const strCurrentSearchParams = currentSearchParams.toString();
+  const pageHref = (page: number) =>
+    `${currentUrl}?${createNewSearchParams(strCurrentSearchParams, page)}`;
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
-      <Button variant="outline" disabled={currentPage === 1} size="lg">
-        <Link
-          href={`${currentUrl}?${createNewSearchParams(strCurrentSearchParams, currentPage - 1)}`}
-        >
+      {currentPage === 1 ? (
+        <Button variant="outline" size="lg" disabled>
           <ChevronLeft className="h-4 w-4" />
-        </Link>
-      </Button>
-      {currentPage !== 1 && (
-        <Button variant="outline" size="lg">
-          <Link href={`${currentUrl}?${createNewSearchParams(strCurrentSearchParams, 1)}`}>
-            1
+        </Button>
+      ) : (
+        <Button asChild variant="outline" size="lg">
+          <Link href={pageHref(currentPage - 1)}>
+            <ChevronLeft className="h-4 w-4" />
           </Link>
+        </Button>
+      )}
+      {currentPage !== 1 && (
+        <Button asChild variant="outline" size="lg">
+          <Link href={pageHref(1)}>1</Link>
         </Button>
       )}
       {currentPage > 3 && <Ellipsis className="h-4 w-4" />}
       {currentPage > 2 && (
-        <Button variant="outline" size="lg">
-          <Link href={`${currentUrl}?${createNewSearchParams(strCurrentSearchParams, currentPage - 1)}`}>
-            {currentPage - 1}
-          </Link>
+        <Button asChild variant="outline" size="lg">
+          <Link href={pageHref(currentPage - 1)}>{currentPage - 1}</Link>
         </Button>
       )}
       <Button variant="default" disabled>
         {currentPage}
       </Button>
       {currentPage < numPages - 1 && (
-        <Button variant="outline" size="lg">
-          <Link href={`${currentUrl}?${createNewSearchParams(strCurrentSearchParams, currentPage + 1)}`}>
-            {currentPage + 1}
-          </Link>
+        <Button asChild variant="outline" size="lg">
+          <Link href={pageHref(currentPage + 1)}>{currentPage + 1}</Link>
         </Button>
       )}
       {currentPage < numPages - 2 && <Ellipsis className="h-4 w-4" />}
       {currentPage !== numPages && (
-        <Button variant="outline" size="lg">
-          <Link href={`${currentUrl}?${createNewSearchParams(strCurrentSearchParams, numPages)}`}>
-            {numPages}
+        <Button asChild variant="outline" size="lg">
+          <Link href={pageHref(numPages)}>{numPages}</Link>
+        </Button>
+      )}
+      {currentPage === numPages ? (
+        <Button variant="outline" size="lg" disabled>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      ) : (
+        <Button asChild variant="outline" size="lg">
+          <Link href={pageHref(currentPage + 1)}>
+            <ChevronRight className="h-4 w-4" />
           </Link>
         </Button>
       )}
-      <Button variant="outline" disabled={currentPage === numPages} size="lg">
-        <Link
-          href={`${currentUrl}?${createNewSearchParams(strCurrentSearchParams, currentPage + 1)}`}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      </Button>
     </div>
   );
 }
