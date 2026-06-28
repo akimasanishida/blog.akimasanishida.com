@@ -11,7 +11,7 @@
 | About | `/about` | 概要 | ✅ | [`app/about/page.tsx`](../app/about/page.tsx) |
 | ログイン | `/login` | 管理者ログイン | ✅ | [`app/login/page.tsx`](../app/login/page.tsx) |
 | 管理画面 | `/admin` | 記事一覧の閲覧（認証付き・ソート/ページネーション）。**投稿・編集は未実装** | ⚠️ | [`app/admin/page.tsx`](../app/admin/page.tsx) |
-| メディア管理 | `/admin/media` | メディア一覧・アップロード・削除（認証付き、R2 を直接 List） | ✅ | [`app/admin/media/page.tsx`](../app/admin/media/page.tsx) / [`lib/storage.ts`](../lib/storage.ts) |
+| メディア管理 | `/admin/media` | メディア一覧・アップロード・削除・リネーム（認証付き、R2 の `media/` を直接 List） | ✅ | [`app/admin/media/page.tsx`](../app/admin/media/page.tsx) / [`lib/storage.ts`](../lib/storage.ts) |
 | アーカイブ（年） | `/archives/[year]` | 指定年の記事 | 🚧 | — |
 | アーカイブ（月） | `/archives/[year]/[month]` | 指定年月の記事 | 🚧 | — |
 | カテゴリー | `/categories/[category]` | 指定カテゴリーの記事 | 🚧 | — |
