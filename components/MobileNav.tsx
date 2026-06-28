@@ -25,6 +25,7 @@ export function MobileNav({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="lg">
           <MenuIcon />
+          <span className="sr-only">メニュー</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
