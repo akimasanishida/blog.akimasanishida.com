@@ -42,6 +42,15 @@ describe("toTokyoISODate", () => {
     expect(toTokyoISODate("2026-06-28")).toBeNull();
     expect(toTokyoISODate("June 28")).toBeNull();
   });
+  it("実在しない暦日は null（繰り上がりを弾く）", () => {
+    expect(toTokyoISODate("2026/02/30")).toBeNull();
+    expect(toTokyoISODate("2026/13/01")).toBeNull();
+    expect(toTokyoISODate("2026/99/99")).toBeNull();
+    expect(toTokyoISODate("2026/02/29")).toBeNull(); // 平年
+  });
+  it("実在する閏日は許可する", () => {
+    expect(toTokyoISODate("2024/02/29")).toBe("2024-02-29T00:00:00+09:00");
+  });
 });
 
 describe("mediaDisplayName", () => {
@@ -67,6 +76,11 @@ describe("buildMediaSnippet", () => {
     expect(
       buildMediaSnippet(media({ key: "media/s.mp3", kind: "audio" }), ""),
     ).toBe("![](media/s.mp3)");
+  });
+  it("キャプション内の \" を title でエスケープする", () => {
+    expect(
+      buildMediaSnippet(media({ key: "media/a.png" }), 'He said "hi"'),
+    ).toBe('![He said "hi"](media/a.png "He said \\"hi\\"")');
   });
   it("その他ファイルは絶対 URL のリンクにする", () => {
     expect(

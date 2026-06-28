@@ -7,11 +7,24 @@ import type { MediaObject } from "@/types/media";
 // URL（slug）に許可する文字。半角英数字・ハイフン・アンダースコア・ドットのみ。
 export const SLUG_PATTERN = /^[A-Za-z0-9._-]+$/;
 
-// "yyyy/MM/dd" を Asia/Tokyo（+09:00）の ISO 文字列に。形式不正なら null。
+// "yyyy/MM/dd" を Asia/Tokyo（+09:00）の ISO 文字列に。
+// 形式不正、または実在しない暦日（例: 2026/02/30, 2026/99/99）は null を返す。
 export function toTokyoISODate(text: string): string | null {
   const m = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(text.trim());
   if (!m) return null;
   const [, y, mo, d] = m;
+  const year = Number(y);
+  const month = Number(mo);
+  const day = Number(d);
+  // 暦日として成立するか検証（月・日の繰り上がりが起きたら不正）。
+  const dt = new Date(Date.UTC(year, month - 1, day));
+  if (
+    dt.getUTCFullYear() !== year ||
+    dt.getUTCMonth() !== month - 1 ||
+    dt.getUTCDate() !== day
+  ) {
+    return null;
+  }
   const pad = (s: string) => s.padStart(2, "0");
   return `${y}-${pad(mo)}-${pad(d)}T00:00:00+09:00`;
 }
@@ -30,5 +43,8 @@ export function buildMediaSnippet(item: MediaObject, caption: string): string {
   if (item.kind === "other") {
     return `[${alt || mediaDisplayName(item.key)}](${item.url})`;
   }
-  return alt ? `![${alt}](${item.key} "${alt}")` : `![](${item.key})`;
+  if (!alt) return `![](${item.key})`;
+  // title（"..."）内の " は \" にエスケープしないと Markdown が壊れる。
+  const title = alt.replace(/"/g, '\\"');
+  return `![${alt}](${item.key} "${title}")`;
 }

@@ -32,4 +32,12 @@ describe("renderMarkdownToHTML — メディア振り分け", () => {
     expect(html).toContain("<video");
     expect(html).toContain("<figcaption>デモ動画</figcaption>");
   });
+
+  it("title 内のエスケープされた \" が figcaption に正しく戻る", async () => {
+    // buildMediaSnippet が生成する形（" は \" にエスケープ）
+    const html = await renderMarkdownToHTML(
+      '![cap](media/a.png "say \\"hi\\"")',
+    );
+    expect(html).toContain('<figcaption>say "hi"</figcaption>');
+  });
 });
