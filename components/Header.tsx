@@ -1,20 +1,17 @@
 import Link from "next/link";
-import { ModeToggle, ModeToggleMobile } from "@/components/ThemeToggle";
+import { ModeToggle } from "@/components/ThemeToggle";
+import { MobileNav } from "@/components/MobileNav";
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuGroup,
-} from "@/components/ui/dropdown-menu";
-import { MenuIcon } from "lucide-react";
 import { auth, signOut } from "@/auth";
 
 export default async function Header() {
   const session = await auth();
   const isLoggedIn = !!session?.user;
+
+  async function signOutAction() {
+    "use server";
+    await signOut({ redirectTo: "/" });
+  }
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-[var(--background)]/30 backdrop-blur-sm z-50 py-4 px-6 flex justify-between items-center text-sm shadow-sm">
@@ -37,12 +34,7 @@ export default async function Header() {
           </li>
           <li>
             {isLoggedIn ? (
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/" });
-                }}
-              >
+              <form action={signOutAction}>
                 <Button variant="default" size="lg">
                   ログアウト
                 </Button>
@@ -61,48 +53,7 @@ export default async function Header() {
 
       {/* Mobile Navigation */}
       <div className="block md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="lg">
-              <MenuIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href="/about">ブログについて</Link>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href="/admin">管理用</Link>
-              </DropdownMenuItem>
-              {isLoggedIn ? (
-                <form
-                  action={async () => {
-                    "use server";
-                    await signOut({ redirectTo: "/" });
-                  }}
-                >
-                  <DropdownMenuItem asChild>
-                    <button type="submit" className="w-full text-left">
-                      ログアウト
-                    </button>
-                  </DropdownMenuItem>
-                </form>
-              ) : (
-                <DropdownMenuItem asChild>
-                  <Link href="/login">ログイン</Link>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <ModeToggleMobile />
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <MobileNav isLoggedIn={isLoggedIn} signOutAction={signOutAction} />
       </div>
     </nav>
   );
