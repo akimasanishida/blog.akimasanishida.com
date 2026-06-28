@@ -11,6 +11,8 @@
 | `pnpm build` | 本番ビルド |
 | `pnpm lint` | ESLint（CI と同等。PR 前に必須） |
 | `npx tsc --noEmit` | 型チェック（CI には無いので手元で実施推奨） |
+| `pnpm test` | Vitest 単体テスト（CI 同等）。詳細は [testing.md](./testing.md) |
+| `pnpm test:e2e` | Playwright E2E ⚠️ ローカル専用（dev サーバー＋seed 済み DB/R2 が前提） |
 | `pnpm docs:build` | `docs/*.md` から人間向け HTML を `docs/_site/` に生成 |
 | `pnpm db:seed` | DB 初期化＋モック投入 ⚠️ ローカル専用・要確認 |
 | `pnpm storage:upload` | テスト画像アップロード ⚠️ ローカル専用・要確認 |

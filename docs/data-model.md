@@ -18,13 +18,18 @@ Markdown 内の参照パス→公開 URL 変換は [`lib/markdown.ts`](../lib/ma
 
 ## クエリ
 
-posts の読み取りは [`lib/data.ts`](../lib/data.ts) に集約:
+posts の読み取り・書き込みは [`lib/data.ts`](../lib/data.ts) に集約:
 
 - `fetchPostBySlug(slug)` — slug で 1 件取得（記事ページ）
+- `fetchPostById(id)` — id で 1 件取得（編集ページ。不正 UUID は null）
 - `fetchPostsMetaData(startFrom, numberOfPosts, includeDraft, order, sortBy)` — 一覧（OFFSET/LIMIT・公開/下書き・並び順）
 - `fetchTotalPostsCount(includeDraft)` — 総件数（ページ総数算出）
+- `fetchCategories()` — カテゴリー候補（`DISTINCT category`）
+- `createPost` / `updatePost` / `deletePost` / `setPostPublic` — 記事 CRUD と公開トグル（#9）
 
-ユーザー取得は認証時のみ（[`auth.ts`](../auth.ts) の `getUser`）。詳細は [auth.md](./auth.md)。
+書き込みは Server Action [`lib/post-actions.ts`](../lib/post-actions.ts)（`savePost`/`deletePostAction`/`togglePublicAction`）を
+経由し、各アクションは [`auth.ts`](../auth.ts) の `auth()` で多層防御する。slug 一意制約違反（23505）は
+アクション側で文言化する。ユーザー取得は認証時のみ（`auth.ts` の `getUser`）。詳細は [auth.md](./auth.md)。
 
 ## インデックス設計の根拠
 
