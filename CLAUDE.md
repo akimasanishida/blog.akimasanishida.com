@@ -60,7 +60,9 @@
 
 ## ワークフロー（Human on the loop）
 
-- ブランチは Issue 単位。既存の命名（例: `#8_admin_posts_list`）に倣う。`main` で直接作業しない。
+- ブランチ名（`main` で直接作業しない。説明・単語間は**スネークケース `_`**）:
+  - Issue あり: `#<番号>_<説明>`（例: `#18_admin_media`）。
+  - Issue 無し: `<種別>/<説明>`（例: `chore/create_pr_docs_check`、種別は feat/fix/docs/chore/refactor/revert 等）。
 - 機能実装は **plan mode** で計画 → 承認 → 実装。
 - PR 前に `pnpm lint`（必要なら `npx tsc --noEmit`）を通す。
 - PR は [`.github/pull_request_template.md`](./.github/pull_request_template.md)（概要 / コード / テスト）に従う。
