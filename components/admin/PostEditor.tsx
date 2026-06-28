@@ -39,7 +39,11 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { renderPreview } from "@/lib/admin-actions";
-import { savePost, checkSlugAvailability } from "@/lib/post-actions";
+import {
+  savePost,
+  checkSlugAvailability,
+  togglePublicAction,
+} from "@/lib/post-actions";
 import { uploadMediaAction } from "@/lib/actions";
 import {
   SLUG_PATTERN,
@@ -84,12 +88,34 @@ export default function PostEditor({
   const initialDate = initialPost?.published_at
     ? new Date(initialPost.published_at)
     : undefined;
+  const initialDateText =
+    initialDate && isValid(initialDate) ? format(initialDate, DATE_FORMAT) : "";
   const [date, setDate] = React.useState<Date | undefined>(initialDate);
-  const [dateText, setDateText] = React.useState(
-    initialDate && isValid(initialDate) ? format(initialDate, DATE_FORMAT) : "",
-  );
+  const [dateText, setDateText] = React.useState(initialDateText);
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // ---- 未保存の変更（dirty）検知 ----
+  // 保存時点の値を基準に、いずれかが変わっていれば「未保存」とみなす。
+  const [baseline, setBaseline] = React.useState({
+    title: initialPost?.title ?? "",
+    slug: initialPost?.slug ?? "",
+    category: initialPost?.category ?? "",
+    content: initialPost?.content ?? "",
+    dateText: initialDateText,
+  });
+  const isDirty =
+    title !== baseline.title ||
+    slug !== baseline.slug ||
+    category !== baseline.category ||
+    content !== baseline.content ||
+    dateText !== baseline.dateText;
+
+  // popstate ハンドラ（mount 時に 1 度だけ登録）から最新の dirty を参照するための ref。
+  const isDirtyRef = React.useRef(isDirty);
+  React.useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
 
   // ---- 保存・公開 ----
   const [isSaving, startSaving] = React.useTransition();
@@ -98,6 +124,14 @@ export default function PostEditor({
   >(null);
 
   function handleSave(intent: "draft" | "publish") {
+    // 公開・更新は取り消しにくい操作なので確認する。
+    if (intent === "publish") {
+      const message = isExistingPublic
+        ? "記事を更新します。よろしいですか？"
+        : "記事を公開します。よろしいですか？";
+      if (!window.confirm(message)) return;
+    }
+
     setFeedback(null);
     startSaving(async () => {
       const result = await savePost({
@@ -114,11 +148,32 @@ export default function PostEditor({
       if (result?.status === "error") {
         setFeedback({ type: "error", text: result.message });
       } else {
+        // 保存できたので dirty 基準を現在値に更新（離脱警告を解除）。
+        setBaseline({ title, slug, category, content, dateText });
         setFeedback(
           result?.status === "success"
             ? { type: "success", text: result.message }
             : null,
         );
+        router.refresh();
+      }
+    });
+  }
+
+  // 既存の公開記事を下書きに戻す（公開ページから外す）。本文の編集内容には触れない。
+  function handleRevertToDraft() {
+    const id = initialPost?.id;
+    if (!id) return;
+    if (!window.confirm("この記事を下書きに戻しますか？　公開ページから外れます。")) {
+      return;
+    }
+    setFeedback(null);
+    startSaving(async () => {
+      const result = await togglePublicAction(id, false);
+      if (result?.status === "error") {
+        setFeedback({ type: "error", text: result.message });
+      } else {
+        setFeedback({ type: "success", text: "下書きに戻しました。" });
         router.refresh();
       }
     });
@@ -135,6 +190,94 @@ export default function PostEditor({
     setDate(selected);
     setDateText(selected ? format(selected, DATE_FORMAT) : "");
   }
+
+  // ---- 離脱警告（未保存の変更があるとき）----
+  // beforeunload はリロード/タブを閉じる/外部遷移をカバー。
+  // App Router にはルート遷移フックが無いため、アンカークリックを捕捉して
+  // アプリ内のリンク遷移（ヘッダー等）も確認する。
+  React.useEffect(() => {
+    if (!isDirty) return;
+
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+
+    function onClickCapture(e: MouseEvent) {
+      if (
+        e.defaultPrevented ||
+        e.button !== 0 ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey
+      ) {
+        return; // 新規タブ等は通す
+      }
+      const anchor = (e.target as HTMLElement | null)?.closest?.("a");
+      if (!anchor) return;
+      if (anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+      if (
+        !window.confirm("未保存の変更があります。このページを離れますか？")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("click", onClickCapture, true);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("click", onClickCapture, true);
+    };
+  }, [isDirty]);
+
+  // ---- 戻る/進む（back/forward）対策 ----
+  // モダンブラウザは Navigation API で戻る/進む（traverse）だけを横取りして確認する
+  // （sentinel 不要・履歴を汚さず、preventDefault で確実に留まれる）。非対応ブラウザは
+  // history sentinel + popstate にフォールバック。push/replace（保存後の redirect /
+  // refresh・リンク遷移）は対象外なので保存フローに干渉しない。
+  React.useEffect(() => {
+    type NavEventLike = {
+      navigationType: string;
+      cancelable: boolean;
+      preventDefault(): void;
+    };
+    type NavLike = {
+      addEventListener(t: "navigate", cb: (e: NavEventLike) => void): void;
+      removeEventListener(t: "navigate", cb: (e: NavEventLike) => void): void;
+    };
+    const nav = (window as unknown as { navigation?: NavLike }).navigation;
+    const message = "未保存の変更があります。このページを離れますか？";
+
+    if (nav) {
+      const onNavigate = (e: NavEventLike) => {
+        if (e.navigationType !== "traverse" || !e.cancelable) return;
+        if (isDirtyRef.current && !window.confirm(message)) {
+          e.preventDefault(); // 留まる
+        }
+      };
+      nav.addEventListener("navigate", onNavigate);
+      return () => nav.removeEventListener("navigate", onNavigate);
+    }
+
+    // フォールバック: sentinel を積んで popstate で受け止める。
+    window.history.pushState(null, "", window.location.href);
+    const onPopState = () => {
+      if (isDirtyRef.current && !window.confirm(message)) {
+        window.history.pushState(null, "", window.location.href); // 留まる
+        return;
+      }
+      // 離脱: popstate 中の history.back() は無視されることがあるため遅延実行。
+      window.removeEventListener("popstate", onPopState);
+      setTimeout(() => window.history.back(), 0);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   // ---- 本文カーソル位置への挿入 ----
   function insertAtCursor(snippet: string) {
@@ -239,32 +382,45 @@ export default function PostEditor({
       </div>
 
       {/* 保存 / 公開 */}
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-col gap-2">
         {feedback && (
           <p
             className={
-              feedback.type === "error"
-                ? "text-sm text-destructive"
-                : "text-sm text-muted-foreground"
+              "self-end text-sm " +
+              (feedback.type === "error"
+                ? "text-destructive"
+                : "text-muted-foreground")
             }
           >
             {feedback.text}
           </p>
         )}
-        <div className="flex justify-end gap-3">
-          <Button
-            variant="secondary"
-            disabled={isSaving}
-            onClick={() => handleSave("draft")}
-          >
-            {isSaving ? "保存中…" : "下書き保存"}
-          </Button>
-          <Button
-            disabled={isSaving || !canPublish}
-            onClick={() => handleSave("publish")}
-          >
-            {isSaving ? "保存中…" : isExistingPublic ? "更新" : "公開"}
-          </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* 既存の公開記事のみ: 下書きに戻す */}
+          {isExistingPublic && (
+            <Button
+              variant="outline"
+              disabled={isSaving}
+              onClick={handleRevertToDraft}
+            >
+              下書きに戻す
+            </Button>
+          )}
+          <div className="ml-auto flex gap-3">
+            <Button
+              variant="secondary"
+              disabled={isSaving}
+              onClick={() => handleSave("draft")}
+            >
+              {isSaving ? "保存中…" : "下書き保存"}
+            </Button>
+            <Button
+              disabled={isSaving || !canPublish}
+              onClick={() => handleSave("publish")}
+            >
+              {isSaving ? "保存中…" : isExistingPublic ? "更新" : "公開"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

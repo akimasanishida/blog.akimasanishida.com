@@ -5,6 +5,9 @@ test("新規作成して公開し、公開ページに表示される", async ({
   const slug = `e2e-${Date.now()}`;
   const title = `E2E記事 ${slug}`;
 
+  // 公開時の確認・削除時の確認ダイアログを自動承認
+  page.on("dialog", (d) => d.accept());
+
   await page.goto("/admin");
   await page.getByRole("link", { name: "新規作成", exact: true }).click();
   await page.waitForURL("**/admin/posts/new");
@@ -26,8 +29,7 @@ test("新規作成して公開し、公開ページに表示される", async ({
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
   await expect(page.getByText("本文テストです。")).toBeVisible();
 
-  // 後始末: 一覧から削除（確認ダイアログは自動承認）
-  page.on("dialog", (d) => d.accept());
+  // 後始末: 一覧から削除（確認ダイアログは冒頭で自動承認登録済み）
   await page.goto("/admin");
   const row = page.getByRole("row").filter({ hasText: title });
   await row.getByRole("button", { name: "削除" }).click();
