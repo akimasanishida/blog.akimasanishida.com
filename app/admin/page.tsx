@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { fetchPostsMetaData, fetchTotalPostsCount } from "@/lib/data";
 import PostsTable from "./data-table";
 import { PaginationForPages } from "@/components/Pagination";
+import { Button } from "@/components/ui/button";
 
 export default async function Page(props: {
   searchParams?: Promise<{
@@ -23,6 +26,14 @@ export default async function Page(props: {
 
   return (
     <div className="flex flex-col container mx-auto py-10 gap-8">
+      <div className="flex justify-end">
+        <Button asChild>
+          <Link href="/admin/posts/new">
+            <Plus />
+            新規作成
+          </Link>
+        </Button>
+      </div>
       <PostsTable posts={posts} sortBy={sortBy} order={order} />
       <PaginationForPages
         currentPage={page}

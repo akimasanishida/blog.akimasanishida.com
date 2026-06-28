@@ -128,6 +128,12 @@
   }
 }
 
+/* 管理画面プレビュー専用: 公開ページはタイトルを <h1> として本文の外で描画するため
+   `.article h1` を持たない。本文に h1 を書いた場合でもプレビューで見出しと分かるよう、
+   プレビュー（.article-preview）のときだけ h1 を見出しスタイルにする。 */
+.article-preview h1 {
+  @apply text-3xl my-4 font-bold;
+}
 .article h2 {
   @apply text-2xl my-4 font-bold;
 }
