@@ -14,8 +14,12 @@ PR を作成するときは次に従う。
    - 変更が他 docs（`architecture.md` / `infrastructure.md` / `auth.md` / `content-pipeline.md` 等）の
      記述に波及していないか `grep -rn <キーワード> docs --include=*.md` で確認。
    - docs は **Markdown が正本**。`docs/_site/` は生成物・**git 管理外**なので再生成・コミットは不要。
-3. ブランチは Issue 単位（`main` で直接作業しない）。本文は
-   [`.github/pull_request_template.md`](../../../.github/pull_request_template.md)（概要 / コード / テスト）に従う。
+3. ブランチ名は規約に従う（`main` で直接作業しない。説明・単語間は**スネークケース `_`**）:
+   - Issue あり: `#<番号>_<説明>`（例: `#18_admin_media` / `#39_fix_hydration_nesting`）。
+   - Issue 無し: `<種別>/<説明>`（例: `chore/create_pr_docs_check` / `docs/readme_fixup` / `revert/pr_37`）。
+     種別は Conventional Commits 系（feat / fix / docs / chore / refactor / revert 等）。
+
+   本文は [`.github/pull_request_template.md`](../../../.github/pull_request_template.md)（概要 / コード / テスト）に従う。
 4. 対応する Issue があれば、本文冒頭に `close #<Issue番号>`（GitHub の closing keyword）を入れる。
    これで `main` へのマージ時に対象 Issue が自動クローズされる。Issue を伴わない PR では省略してよい。
 5. `gh pr create` で作成する（`.claude/settings.json` で自動許可済み）。
