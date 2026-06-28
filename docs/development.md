@@ -32,6 +32,7 @@
 - ブランチは Issue 単位（既存命名 `#8_admin_posts_list` に倣う）。`main` で直接作業しない。
 - 機能実装は plan mode で計画 → 承認 → 実装。
 - PR 前に `pnpm lint`（必要なら `npx tsc --noEmit`）。PR は [`../.github/pull_request_template.md`](../.github/pull_request_template.md) に従う。
+- **PR 作成前に必ず docs の整合をチェックする**（[`../.claude/skills/create-pr/SKILL.md`](../.claude/skills/create-pr/SKILL.md) の手順）。不整合は PR 前に同ブランチで修正する。
 - 破壊的スクリプト・push・PR 作成・依存変更は確認プロンプトが出る（[`../.claude/settings.json`](../.claude/settings.json) の `ask`）。
 
 ## 既知の負債
