@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+# Playwright（E2E の成果物・認証 storageState）
+/test-results
+/playwright-report
+/playwright/.auth
 
 # next.js
 /.next/

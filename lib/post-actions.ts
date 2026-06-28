@@ -10,6 +10,7 @@ import {
   setPostPublic,
   isSlugAvailable,
 } from "@/lib/data";
+import { SLUG_PATTERN, toTokyoISODate } from "@/lib/post-format";
 
 export type PostActionState =
   | { status: "success"; message: string }
@@ -29,17 +30,6 @@ export type SavePostInput = {
   intent: "draft" | "publish";
 };
 
-const SLUG_RE = /^[A-Za-z0-9._-]+$/;
-
-// "yyyy/MM/dd" を Asia/Tokyo（+09:00）の ISO 文字列に。形式不正なら null。
-function toTokyoISODate(text: string): string | null {
-  const m = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(text.trim());
-  if (!m) return null;
-  const [, y, mo, d] = m;
-  const pad = (s: string) => s.padStart(2, "0");
-  return `${y}-${pad(mo)}-${pad(d)}T00:00:00+09:00`;
-}
-
 export type SlugCheckResult =
   | { status: "available" }
   | { status: "taken" }
@@ -56,7 +46,7 @@ export async function checkSlugAvailability(
 
   const trimmed = slug.trim();
   if (!trimmed) return { status: "empty" };
-  if (!SLUG_RE.test(trimmed)) return { status: "invalid" };
+  if (!SLUG_PATTERN.test(trimmed)) return { status: "invalid" };
 
   return (await isSlugAvailable(trimmed, excludeId))
     ? { status: "available" }
@@ -76,7 +66,7 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
   if (!slug) {
     return { status: "error", message: "URL（slug）を入力してください。" };
   }
-  if (!SLUG_RE.test(slug)) {
+  if (!SLUG_PATTERN.test(slug)) {
     return {
       status: "error",
       message:

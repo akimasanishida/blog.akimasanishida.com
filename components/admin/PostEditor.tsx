@@ -41,6 +41,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { renderPreview } from "@/lib/admin-actions";
 import { savePost, checkSlugAvailability } from "@/lib/post-actions";
 import { uploadMediaAction } from "@/lib/actions";
+import {
+  SLUG_PATTERN,
+  buildMediaSnippet,
+  mediaDisplayName,
+} from "@/lib/post-format";
 import type { MediaObject } from "@/types/media";
 import type { Post } from "@/types/posts";
 
@@ -269,7 +274,6 @@ export default function PostEditor({
 // ---- URL（slug）入力 + 重複チェック ----
 // 入力が変わるたびに少し待ってから（デバウンス）サーバーへ重複チェックし、
 // 右側に緑（使用可能）/ 赤（使用済み・不正）/ 確認中スピナーで状態表示する。
-const SLUG_PATTERN = /^[A-Za-z0-9._-]+$/;
 const SLUG_CHECK_DEBOUNCE_MS = 500;
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
@@ -488,23 +492,6 @@ function CategoryAutocomplete({
       )}
     </div>
   );
-}
-
-// 保存キーは media/ 配下なので、表示時は prefix を落とす（media-manager と同様）。
-function mediaDisplayName(key: string): string {
-  return key.replace(/^media\//, "");
-}
-
-// メディア種別に応じた本文スニペット。
-// 画像・動画・音声は同じ `![caption](相対キー "caption")` 記法で挿入し、
-// lib/markdown.ts が拡張子から <img>/<video>/<audio> に振り分け、公開 URL への
-// 書き換えと title→figcaption 化を行う。その他のファイルはリンクにする。
-function buildMediaSnippet(item: MediaObject, caption: string): string {
-  const alt = caption.trim();
-  if (item.kind === "other") {
-    return `[${alt || mediaDisplayName(item.key)}](${item.url})`;
-  }
-  return alt ? `![${alt}](${item.key} "${alt}")` : `![](${item.key})`;
 }
 
 // グリッドのプレビュー。画像は表示、動画/音声はその場で再生できるプレイヤー、

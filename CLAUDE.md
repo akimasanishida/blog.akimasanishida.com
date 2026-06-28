@@ -38,6 +38,8 @@
 | `pnpm build` | 本番ビルド |
 | `pnpm lint` | ESLint（**CI と同等。PR 前に必須**） |
 | `npx tsc --noEmit` | 型チェック（CI には無いので手元で実施推奨） |
+| `pnpm test` | Vitest 単体テスト（ロジック層・**CI 同等**） |
+| `pnpm test:e2e` | Playwright E2E ⚠️ **ローカル専用**（dev サーバー＋seed 済みローカル DB/R2 が前提）。詳細は [`docs/testing.md`](./docs/testing.md) |
 | `pnpm docs:build` | `docs/*.md` から HTML を `docs/_site/` に生成（人間向け閲覧用） |
 | `pnpm db:seed` | DB 初期化＋モック投入 ⚠️ **ローカル専用・要確認** |
 | `pnpm storage:upload` | テスト画像アップロード ⚠️ **ローカル専用・要確認** |
@@ -70,6 +72,6 @@
 
 ## 既知の負債（別 Issue 候補）
 
-- テストフレームワーク未導入。CI（`.github/workflows/check.yaml`）は `pnpm lint` のみで型チェック・テストが無い。
+- テスト整備は途上。CI（`.github/workflows/check.yaml`）は `pnpm lint` ＋ `pnpm test`（Vitest 単体）。型チェックと Playwright E2E は CI 未投入（E2E はローカル DB/R2 が前提のため）。
 - next-auth が v5 **beta**。
 - DB マイグレーション機構が無く、スキーマは `scripts/seed.ts` の `CREATE TABLE IF NOT EXISTS` に依存。スキーマ SoT のマイグレーション機構移行を別 Issue で検討中（作成後に番号を記入: #TBD）。

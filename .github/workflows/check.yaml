@@ -22,3 +22,21 @@ jobs:
 
       - name: Check code
         run: pnpm lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+
+      - name: Install pnpm and the packages
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          run_install: true
+
+      # Vitest はロジック層のみ（DB/R2 不要）。
+      # Playwright E2E はローカル DB/R2 を要するため CI には載せない（docs/testing.md 参照）。
+      - name: Run unit tests
+        run: pnpm test

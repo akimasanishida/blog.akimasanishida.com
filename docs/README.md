@@ -18,6 +18,7 @@
 | [content-pipeline.md](./content-pipeline.md) | Markdown → HTML 変換（remark/rehype・KaTeX・Prism） |
 | [infrastructure.md](./infrastructure.md) | Neon(Postgres)・R2(S3互換)・環境変数・デプロイ |
 | [development.md](./development.md) | セットアップ・コマンド・開発ワークフロー |
+| [testing.md](./testing.md) | テスト構成（Vitest 単体 / Playwright E2E）と実行手順 |
 | [roadmap.md](./roadmap.md) | 未実装の構想と優先度 |
 | [decisions/](./decisions/README.md) | 設計判断の記録（ADR） |
 
