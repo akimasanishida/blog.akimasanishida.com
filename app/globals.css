@@ -184,12 +184,16 @@
 .article td {
   @apply border border-(--border) px-4 py-2;
 }
-/* 画像 */
+/* 画像・動画・音声 */
 .article figure {
   @apply my-2;
 }
-.article img {
+.article img,
+.article video {
   @apply justify-center mx-auto max-w-full md:max-w-[70%];
+}
+.article audio {
+  @apply mx-auto w-full md:w-[70%];
 }
 .article figcaption {
   @apply text-center text-(--muted-foreground) mt-1;

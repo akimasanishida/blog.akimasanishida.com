@@ -1,9 +1,20 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { format, parse, isValid } from "date-fns";
 import { ja } from "date-fns/locale";
-import { CalendarIcon, ImageIcon, Upload } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarIcon,
+  Check,
+  FileIcon,
+  ImageIcon,
+  Loader2,
+  Music,
+  Upload,
+  X,
+} from "lucide-react";
 
 import "katex/dist/katex.min.css";
 import "prism-themes/themes/prism-one-dark.css";
@@ -28,7 +39,9 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { renderPreview } from "@/lib/admin-actions";
-import { MOCK_IMAGES, type MockImage } from "@/components/admin/mock-data";
+import { savePost, checkSlugAvailability } from "@/lib/post-actions";
+import { uploadMediaAction } from "@/lib/actions";
+import type { MediaObject } from "@/types/media";
 import type { Post } from "@/types/posts";
 
 const DATE_FORMAT = "yyyy/MM/dd";
@@ -36,23 +49,31 @@ const DATE_FORMAT = "yyyy/MM/dd";
 type PostEditorProps = {
   /** 編集時の初期値（新規作成時は省略） */
   initialPost?: Partial<Post>;
-  /** カテゴリー候補（既存カテゴリー）。本実装では DISTINCT 取得に差し替え */
+  /** カテゴリー候補（既存カテゴリーの DISTINCT） */
   categories: string[];
-  /** 挿入可能な画像一覧。本実装では R2 一覧取得に差し替え */
-  images?: MockImage[];
+  /** 挿入可能なメディア一覧（R2 の画像・動画・音声など） */
+  media: MediaObject[];
 };
 
 export default function PostEditor({
   initialPost,
   categories,
-  images = MOCK_IMAGES,
+  media,
 }: PostEditorProps) {
+  const router = useRouter();
   const isExistingPublic = initialPost?.is_public === true;
 
   const [title, setTitle] = React.useState(initialPost?.title ?? "");
   const [slug, setSlug] = React.useState(initialPost?.slug ?? "");
+  const [slugStatus, setSlugStatus] = React.useState<SlugStatus>("idle");
   const [category, setCategory] = React.useState(initialPost?.category ?? "");
   const [content, setContent] = React.useState(initialPost?.content ?? "");
+
+  // 公開/更新の可否: タイトルと有効な URL（書式 OK かつ使用済みでない）が揃ったとき。
+  // 下書き保存は常に可能（保存中の二重送信防止のみ）。
+  const slugFormatValid = slug.trim() !== "" && SLUG_PATTERN.test(slug.trim());
+  const canPublish =
+    title.trim() !== "" && slugFormatValid && slugStatus !== "taken";
 
   // 公開日: テキスト（yyyy/MM/dd）とカレンダーを相互同期
   const initialDate = initialPost?.published_at
@@ -64,6 +85,39 @@ export default function PostEditor({
   );
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // ---- 保存・公開 ----
+  const [isSaving, startSaving] = React.useTransition();
+  const [feedback, setFeedback] = React.useState<
+    { type: "error" | "success"; text: string } | null
+  >(null);
+
+  function handleSave(intent: "draft" | "publish") {
+    setFeedback(null);
+    startSaving(async () => {
+      const result = await savePost({
+        id: initialPost?.id,
+        title,
+        slug,
+        category,
+        content,
+        publishedAtText: dateText,
+        intent,
+      });
+      // 新規作成成功時は Server Action が編集ページへ redirect するため、
+      // ここに戻ってくるのはエラー時か既存記事の更新成功時のみ。
+      if (result?.status === "error") {
+        setFeedback({ type: "error", text: result.message });
+      } else {
+        setFeedback(
+          result?.status === "success"
+            ? { type: "success", text: result.message }
+            : null,
+        );
+        router.refresh();
+      }
+    });
+  }
 
   // ---- 公開日の同期 ----
   function handleDateTextChange(value: string) {
@@ -97,7 +151,7 @@ export default function PostEditor({
   }
 
   return (
-    <div className="container mx-auto flex flex-col gap-6 py-10">
+    <div className="container mx-auto flex flex-col gap-4 py-4">
       <h1 className="text-2xl font-bold">
         {initialPost ? "記事を編集" : "記事を新規作成"}
       </h1>
@@ -113,14 +167,14 @@ export default function PostEditor({
         />
       </div>
 
-      {/* slug */}
+      {/* slug（重複チェック付き） */}
       <div className="flex flex-col gap-2">
         <Label htmlFor="slug">URL</Label>
-        <Input
-          id="slug"
+        <SlugInput
           value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          placeholder="my-first-post"
+          onChange={setSlug}
+          excludeId={initialPost?.id}
+          onStatusChange={setSlugStatus}
         />
       </div>
 
@@ -167,42 +221,157 @@ export default function PostEditor({
         </div>
       </div>
 
-      {/* 本文（編集 / プレビュー）。画像挿入は編集タブ内・入力欄の直下に配置 */}
+      {/* 本文（編集 / プレビュー）。メディア挿入は編集タブ内・入力欄の直下に配置 */}
       <div className="flex flex-col gap-2">
         <Label htmlFor="content">本文</Label>
         <BodyTabs
           content={content}
           onChange={setContent}
           textareaRef={textareaRef}
-          images={images}
+          media={media}
           onInsert={insertAtCursor}
         />
       </div>
 
       {/* 保存 / 公開 */}
-      <div className="flex justify-end gap-3">
-        <Button
-          variant="secondary"
-          onClick={() =>
-            // モック: 永続化なし
-            console.log("[mock] 下書き保存", { title, slug, category, dateText, content })
-          }
-        >
-          下書き保存
-        </Button>
-        <Button
-          onClick={() =>
-            console.log("[mock] 公開/更新", { title, slug, category, dateText, content })
-          }
-        >
-          {isExistingPublic ? "更新" : "公開"}
-        </Button>
+      <div className="flex flex-col items-end gap-2">
+        {feedback && (
+          <p
+            className={
+              feedback.type === "error"
+                ? "text-sm text-destructive"
+                : "text-sm text-muted-foreground"
+            }
+          >
+            {feedback.text}
+          </p>
+        )}
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="secondary"
+            disabled={isSaving}
+            onClick={() => handleSave("draft")}
+          >
+            {isSaving ? "保存中…" : "下書き保存"}
+          </Button>
+          <Button
+            disabled={isSaving || !canPublish}
+            onClick={() => handleSave("publish")}
+          >
+            {isSaving ? "保存中…" : isExistingPublic ? "更新" : "公開"}
+          </Button>
+        </div>
       </div>
-
-      <p className="text-center text-xs text-muted-foreground">
-        ※ これは UI モックです。保存・公開はまだ永続化されません。
-      </p>
     </div>
+  );
+}
+
+// ---- URL（slug）入力 + 重複チェック ----
+// 入力が変わるたびに少し待ってから（デバウンス）サーバーへ重複チェックし、
+// 右側に緑（使用可能）/ 赤（使用済み・不正）/ 確認中スピナーで状態表示する。
+const SLUG_PATTERN = /^[A-Za-z0-9._-]+$/;
+const SLUG_CHECK_DEBOUNCE_MS = 500;
+
+type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
+
+function SlugInput({
+  value,
+  onChange,
+  excludeId,
+  onStatusChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  excludeId?: string;
+  onStatusChange?: (status: SlugStatus) => void;
+}) {
+  const [status, setStatus] = React.useState<SlugStatus>("idle");
+
+  // 親（公開ボタンの活性判定）へ最新ステータスを通知。
+  React.useEffect(() => {
+    onStatusChange?.(status);
+  }, [status, onStatusChange]);
+
+  React.useEffect(() => {
+    const slug = value.trim();
+    if (!slug) {
+      setStatus("idle");
+      return;
+    }
+    if (!SLUG_PATTERN.test(slug)) {
+      setStatus("invalid");
+      return;
+    }
+
+    setStatus("checking");
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const result = await checkSlugAvailability(slug, excludeId);
+        if (cancelled) return;
+        // empty/invalid は上で弾いているが、念のため available 以外は taken 扱い。
+        setStatus(result.status === "available" ? "available" : "taken");
+      } catch {
+        if (!cancelled) setStatus("idle");
+      }
+    }, SLUG_CHECK_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [value, excludeId]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        id="slug"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="my-article-title"
+        className="flex-1"
+        autoComplete="off"
+        aria-invalid={status === "taken" || status === "invalid"}
+      />
+      <SlugStatusBadge status={status} />
+    </div>
+  );
+}
+
+function SlugStatusBadge({ status }: { status: SlugStatus }) {
+  if (status === "idle") return null;
+
+  const base = "inline-flex shrink-0 items-center gap-1 text-sm";
+  if (status === "checking") {
+    return (
+      <span className={`${base} text-muted-foreground`}>
+        <Loader2 className="h-4 w-4 animate-spin" />
+        確認中…
+      </span>
+    );
+  }
+  if (status === "available") {
+    return (
+      <span className={`${base} text-green-600 dark:text-green-500`}>
+        <Check className="h-4 w-4" />
+        使用可能
+      </span>
+    );
+  }
+  if (status === "taken") {
+    return (
+      <span className={`${base} text-destructive`}>
+        <X className="h-4 w-4" />
+        使用済み
+      </span>
+    );
+  }
+  // invalid
+  return (
+    <span className={`${base} text-destructive`}>
+      <AlertCircle className="h-4 w-4" />
+      使用できない文字
+    </span>
   );
 }
 
@@ -321,26 +490,107 @@ function CategoryAutocomplete({
   );
 }
 
-// ---- 画像挿入オーバーレイ ----
-function ImagePickerDialog({
-  images,
+// 保存キーは media/ 配下なので、表示時は prefix を落とす（media-manager と同様）。
+function mediaDisplayName(key: string): string {
+  return key.replace(/^media\//, "");
+}
+
+// メディア種別に応じた本文スニペット。
+// 画像・動画・音声は同じ `![caption](相対キー "caption")` 記法で挿入し、
+// lib/markdown.ts が拡張子から <img>/<video>/<audio> に振り分け、公開 URL への
+// 書き換えと title→figcaption 化を行う。その他のファイルはリンクにする。
+function buildMediaSnippet(item: MediaObject, caption: string): string {
+  const alt = caption.trim();
+  if (item.kind === "other") {
+    return `[${alt || mediaDisplayName(item.key)}](${item.url})`;
+  }
+  return alt ? `![${alt}](${item.key} "${alt}")` : `![](${item.key})`;
+}
+
+// グリッドのプレビュー。画像は表示、動画/音声はその場で再生できるプレイヤー、
+// その他は種別アイコン。media-manager の MediaPreview と同様に素の要素で描画する。
+function MediaPreview({ item }: { item: MediaObject }) {
+  if (item.kind === "image") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={item.url}
+        alt={item.key}
+        className="aspect-[4/3] w-full bg-muted object-contain"
+      />
+    );
+  }
+  if (item.kind === "video") {
+    return (
+      <video
+        src={item.url}
+        controls
+        preload="metadata"
+        className="aspect-[4/3] w-full bg-black object-contain"
+      />
+    );
+  }
+  if (item.kind === "audio") {
+    return (
+      <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 bg-muted px-2 text-muted-foreground">
+        <Music className="h-7 w-7" />
+        <audio src={item.url} controls preload="metadata" className="w-full" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
+      <FileIcon className="h-8 w-8" />
+      <span className="text-[10px] uppercase">{item.kind}</span>
+    </div>
+  );
+}
+
+// ---- メディア挿入オーバーレイ ----
+function MediaPickerDialog({
+  media,
   onInsert,
 }: {
-  images: MockImage[];
+  media: MediaObject[];
   onInsert: (snippet: string) => void;
 }) {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<MockImage | null>(null);
+  const [selected, setSelected] = React.useState<MediaObject | null>(null);
   const [caption, setCaption] = React.useState("");
+
+  // メディアアップロード（既存の uploadMediaAction を再利用）
+  const uploadInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploading, startUploading] = React.useTransition();
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+
+  function handleUploadChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    for (const file of Array.from(files)) formData.append("files", file);
+    e.target.value = ""; // 同じファイルを選び直せるようリセット
+    setUploadError(null);
+    startUploading(async () => {
+      try {
+        const result = await uploadMediaAction(undefined, formData);
+        if (result?.status === "error") {
+          setUploadError(result.message);
+        } else {
+          // サーバー側 listMedia() を再取得してグリッドへ反映
+          router.refresh();
+        }
+      } catch {
+        setUploadError(
+          "ファイルサイズが上限の25 MB を超えるため、アップロードできませんでした。",
+        );
+      }
+    });
+  }
 
   function handlePaste() {
     if (!selected) return;
-    const alt = caption.trim();
-    // lib/markdown.ts が解釈する形式: ![alt](images/x.png "caption")
-    const snippet = alt
-      ? `![${alt}](${selected.key} "${alt}")`
-      : `![](${selected.key})`;
-    onInsert(`\n\n${snippet}\n\n`);
+    onInsert(`\n\n${buildMediaSnippet(selected, caption)}\n\n`);
     // リセットして閉じる
     setOpen(false);
     setSelected(null);
@@ -352,54 +602,90 @@ function ImagePickerDialog({
       <DialogTrigger asChild>
         <Button variant="outline" size="lg">
           <ImageIcon />
-          画像を挿入
+          メディアを挿入
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl" aria-describedby={undefined}>
+      <DialogContent className="sm:max-w-4xl" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>画像を挿入</DialogTitle>
+          <DialogTitle>メディアを挿入</DialogTitle>
         </DialogHeader>
 
-        <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
-          {images.map((img) => {
-            const isActive = selected?.key === img.key;
-            return (
-              <button
-                key={img.key}
-                type="button"
-                onClick={() => setSelected(img)}
-                className={
-                  "overflow-hidden rounded-md border transition-colors " +
-                  (isActive
-                    ? "border-primary ring-2 ring-primary/40"
-                    : "border-border hover:border-foreground/40")
-                }
-                aria-pressed={isActive}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.url}
-                  alt={img.key}
-                  className="aspect-[3/2] w-full object-cover"
-                />
-                <span className="block truncate px-1 py-0.5 text-[10px] text-muted-foreground">
-                  {img.key}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {media.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            メディアがまだありません。「メディアを追加」からアップロードしてください。
+          </p>
+        ) : (
+          <div className="grid max-h-[60vh] grid-cols-2 gap-3 overflow-y-auto p-1 sm:grid-cols-3">
+            {media.map((item) => {
+              const isActive = selected?.key === item.key;
+              return (
+                <div
+                  key={item.key}
+                  className={
+                    "relative flex flex-col overflow-hidden rounded-lg border-2 transition-colors " +
+                    (isActive ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background" : "border-border")
+                  }
+                >
+                  {/* プレビューは自由に操作（再生）できる */}
+                  <MediaPreview item={item} />
+                  {isActive && (
+                    <span className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                  <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+                    <span
+                      className="truncate text-xs text-muted-foreground"
+                      title={mediaDisplayName(item.key)}
+                    >
+                      {mediaDisplayName(item.key)}
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isActive ? "default" : "outline"}
+                      className="shrink-0"
+                      onClick={() => setSelected(item)}
+                      aria-pressed={isActive}
+                    >
+                      {isActive ? "選択中" : "選択"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-        {/* TODO: 画像アップロード機能（R2 へのアップロード）は別フェーズで実装 */}
-        <div>
-          <Button variant="outline" size="sm">
-            <Upload />
-            画像を追加
-          </Button>
+        {/* メディアアップロード（R2）。成功後はサーバー再取得でグリッドへ反映 */}
+        <div className="flex flex-col gap-1">
+          <input
+            ref={uploadInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*,audio/*"
+            className="hidden"
+            onChange={handleUploadChange}
+          />
+          <div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUploading}
+              onClick={() => uploadInputRef.current?.click()}
+            >
+              <Upload />
+              {isUploading ? "アップロード中…" : "メディアを追加"}
+            </Button>
+          </div>
+          {uploadError && (
+            <p className="text-sm text-destructive">{uploadError}</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="caption">キャプション</Label>
+          <Label htmlFor="caption">キャプション（任意）</Label>
           <Input
             id="caption"
             value={caption}
@@ -422,13 +708,13 @@ function BodyTabs({
   content,
   onChange,
   textareaRef,
-  images,
+  media,
   onInsert,
 }: {
   content: string;
   onChange: (value: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  images: MockImage[];
+  media: MediaObject[];
   onInsert: (snippet: string) => void;
 }) {
   const [tab, setTab] = React.useState("edit");
@@ -460,14 +746,14 @@ function BodyTabs({
           value={content}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Markdown で本文を入力…"
-          className="min-h-100 font-mono"
+          className="h-100 resize-none overflow-y-auto font-mono field-sizing-fixed"
         />
         <div>
-          <ImagePickerDialog images={images} onInsert={onInsert} />
+          <MediaPickerDialog media={media} onInsert={onInsert} />
         </div>
       </TabsContent>
       <TabsContent value="preview">
-        <div className="min-h-100 rounded-lg border p-4">
+        <div className="h-100 overflow-y-auto rounded-lg border p-4">
           {loading ? (
             <p className="text-sm text-muted-foreground">プレビューを生成中…</p>
           ) : content.trim() === "" ? (

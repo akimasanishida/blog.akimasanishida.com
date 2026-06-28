@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import {
   Table,
@@ -11,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { deletePostAction, togglePublicAction } from "@/lib/post-actions";
 import type { Post } from "@/types/posts";
 
 type SortKey = "published_at" | "updated_at";
@@ -56,36 +59,6 @@ function SortableHeader({
   );
 }
 
-function handlePublicStatusChange(post: Post) {
-  if (post.is_public) {
-    // 公開 → 下書き
-    const userResponse = confirm(`「${post.title}」を下書きに変更しますか？`);
-    if (userResponse) {
-      // TODO: 下書きに変更する処理
-    }
-  } else {
-    // 下書き → 公開
-    const userResponse = confirm(`「${post.title}」を公開しますか？`);
-    if (userResponse) {
-      // TODO: 公開する処理
-    }
-  }
-}
-
-function handleDelete(post: Post) {
-  const userResponse = confirm(
-    `「${post.title}」を削除しますか？　この操作は取り消せません。`,
-  );
-  if (userResponse) {
-    const userResponse2 = confirm(
-      `本気ですか？　「${post.title}」は完全に削除されます。`,
-    );
-    if (userResponse2) {
-      // TODO: 削除する処理
-    }
-  }
-}
-
 export default function PostsTable({
   posts,
   sortBy,
@@ -95,6 +68,46 @@ export default function PostsTable({
   sortBy: SortKey;
   order: Order;
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function handlePublicStatusChange(post: Post) {
+    if (!post.id) return;
+    const id = post.id;
+    const next = !post.is_public;
+    const message = post.is_public
+      ? `「${post.title}」を下書きに変更しますか？`
+      : `「${post.title}」を公開しますか？`;
+    if (!confirm(message)) return;
+    startTransition(async () => {
+      const result = await togglePublicAction(id, next);
+      if (result?.status === "error") {
+        alert(result.message);
+      } else {
+        router.refresh();
+      }
+    });
+  }
+
+  function handleDelete(post: Post) {
+    if (!post.id) return;
+    const id = post.id;
+    if (!confirm(`「${post.title}」を削除しますか？　この操作は取り消せません。`)) {
+      return;
+    }
+    if (!confirm(`本気ですか？　「${post.title}」は完全に削除されます。`)) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await deletePostAction(id);
+      if (result?.status === "error") {
+        alert(result.message);
+      } else {
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <div className="overflow-hidden rounded-md border">
       <Table>
@@ -159,6 +172,7 @@ export default function PostsTable({
               <TableCell className="text-center">
                 <Button
                   variant="secondary"
+                  disabled={isPending}
                   onClick={() => handlePublicStatusChange(post)}
                 >
                   {post.is_public ? "公開" : "下書き"}
@@ -168,6 +182,7 @@ export default function PostsTable({
                 <Button
                   variant="destructive"
                   size="sm"
+                  disabled={isPending}
                   onClick={() => handleDelete(post)}
                 >
                   削除

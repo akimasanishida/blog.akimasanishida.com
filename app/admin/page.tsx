@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ImageIcon, Plus } from "lucide-react";
 import { fetchPostsMetaData, fetchTotalPostsCount } from "@/lib/data";
 import PostsTable from "./data-table";
 import { PaginationForPages } from "@/components/Pagination";
@@ -26,7 +26,16 @@ export default async function Page(props: {
 
   return (
     <div className="flex flex-col container mx-auto py-10 gap-8">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">記事一覧</h1>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/media">
+              <ImageIcon />
+              メディア管理
+            </Link>
+          </Button>
+        </div>
         <Button asChild>
           <Link href="/admin/posts/new">
             <Plus />

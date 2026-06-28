@@ -1,7 +1,16 @@
 "use client";
 
 import { useActionState, useRef, useState, useTransition } from "react";
-import { FileIcon, Maximize2, Pencil, Trash2, Upload, X } from "lucide-react";
+import Link from "next/link";
+import {
+  FileIcon,
+  Maximize2,
+  Newspaper,
+  Pencil,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -245,8 +254,16 @@ export default function MediaManager({ media }: { media: MediaObject[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between">
-        <h1 className="text-2xl font-bold">メディア管理</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">メディア管理</h1>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin">
+              <Newspaper />
+              記事一覧
+            </Link>
+          </Button>
+        </div>
         <UploadButton />
       </div>
 

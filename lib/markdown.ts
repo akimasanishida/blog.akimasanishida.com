@@ -12,6 +12,7 @@ import rehypePrismPlus from "rehype-prism-plus";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeStringify from "rehype-stringify";
 import rehypeSlug from "rehype-slug";
+import mime from "mime-types";
 
 export async function renderMarkdownToHTML(
   markdownContent: string,
@@ -25,9 +26,13 @@ export async function renderMarkdownToHTML(
     .use(remarkRehype, { allowDangerousHtml: true }) // Convert to Rehype (HTML AST)
     .use(rehypeRerwite, {
       rewrite: (node, index, parent) => {
-        // Rewrite image URLs to be absolute paths
+        // `![caption](media/x.ext "caption")` で書かれたメディアを、拡張子から
+        // 画像/動画/音声を判定して <img>/<video>/<audio> に振り分ける。
+        // src は相対キーなので公開 URL を前置し、title は figcaption 化する
+        // （画像・動画・音声で共通の見た目: figure + figcaption）。
         if (node.type === "element" && node.tagName === "img") {
-          const fullSrc = `${process.env.NEXT_PUBLIC_STORAGE_PUBLIC_URL}/${node.properties.src}`;
+          const src = String(node.properties.src ?? "");
+          const fullSrc = `${process.env.NEXT_PUBLIC_STORAGE_PUBLIC_URL}/${src}`;
           const title = node.properties.title
             ? String(node.properties.title)
             : undefined;
@@ -36,16 +41,21 @@ export async function renderMarkdownToHTML(
             parent.type === "element" &&
             parent.tagName !== "figure"
           ) {
+            const contentType = mime.lookup(src) || "";
+            const isVideo = contentType.startsWith("video/");
+            const isAudio = contentType.startsWith("audio/");
+            const tagName = isVideo ? "video" : isAudio ? "audio" : "img";
+            const properties =
+              isVideo || isAudio
+                ? { src: fullSrc, controls: true, title }
+                : { ...node.properties, src: fullSrc, title };
             node.tagName = "figure";
+            node.properties = {};
             node.children = [
               {
                 type: "element",
-                tagName: "img",
-                properties: {
-                  ...node.properties,
-                  src: fullSrc,
-                  title: title,
-                },
+                tagName,
+                properties,
                 children: [],
               },
             ];
