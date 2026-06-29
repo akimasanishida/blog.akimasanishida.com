@@ -4,6 +4,7 @@ import {
   toTokyoISODate,
   mediaDisplayName,
   buildMediaSnippet,
+  buildExcerpt,
 } from "@/lib/post-format";
 import type { MediaObject } from "@/types/media";
 
@@ -93,5 +94,36 @@ describe("buildMediaSnippet", () => {
         "",
       ),
     ).toBe("[f.zip](https://cdn.example.test/media/f.zip)");
+  });
+});
+
+describe("buildExcerpt", () => {
+  it("null・空文字は空を返す", () => {
+    expect(buildExcerpt(null)).toBe("");
+    expect(buildExcerpt("")).toBe("");
+  });
+  it("見出し・強調・引用・リスト記号を落とす", () => {
+    expect(buildExcerpt("# 見出し\n\n**太字** と *斜体* の本文。")).toBe(
+      "見出し 太字 と 斜体 の本文。",
+    );
+    expect(buildExcerpt("> 引用文\n\n- 項目1\n- 項目2")).toBe(
+      "引用文 項目1 項目2",
+    );
+  });
+  it("リンクはテキストだけ残し、画像・コードは除去する", () => {
+    expect(buildExcerpt("詳しくは [こちら](https://example.com) を参照。")).toBe(
+      "詳しくは こちら を参照。",
+    );
+    expect(buildExcerpt("図: ![代替](media/a.png) 終わり")).toBe("図: 終わり");
+    expect(buildExcerpt("```\ncode block\n```\n本文")).toBe("本文");
+    expect(buildExcerpt("`inline` の後")).toBe("の後");
+  });
+  it("maxLen を超えると切り詰めて … を付ける", () => {
+    const long = "あ".repeat(200);
+    const out = buildExcerpt(long, 120);
+    expect(out).toBe("あ".repeat(120) + "…");
+  });
+  it("maxLen 以下はそのまま（末尾に … を付けない）", () => {
+    expect(buildExcerpt("短い本文", 120)).toBe("短い本文");
   });
 });

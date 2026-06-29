@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import { fetchPostsMetaData, fetchTotalPostsCount } from "@/lib/data";
 import PostsList from "@/components/PostsList";
 import { PaginationForPages } from "@/components/Pagination";
+
+export async function generateMetadata(props: {
+  searchParams?: Promise<{ page?: string }>;
+}): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  const page = Number(searchParams?.page) || 1;
+  // 1ページ目はサイト名のみ、2ページ目以降はページ番号付きのタイトルにする。
+  return searchParams?.page
+    ? { title: `ブログ記事一覧（${page}ページ目）` }
+    : { title: { absolute: "西田明正のブログ" } };
+}
 
 export default async function Page(props: {
   searchParams?: Promise<{

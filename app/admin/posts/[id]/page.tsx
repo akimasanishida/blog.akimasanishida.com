@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PostEditor from "@/components/admin/PostEditor";
 import { fetchPostById, fetchCategories } from "@/lib/data";
 import { listMedia } from "@/lib/storage";
+
+export const metadata: Metadata = { title: "記事の編集" };
 
 // /admin 配下のため proxy.ts のミドルウェアで自動的に認証保護される。
 export default async function Page(props: { params: Promise<{ id: string }> }) {

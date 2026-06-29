@@ -4,6 +4,9 @@ import { fetchPostsMetaData, fetchTotalPostsCount } from "@/lib/data";
 import PostsTable from "./data-table";
 import { PaginationForPages } from "@/components/Pagination";
 import { Button } from "@/components/ui/button";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "記事管理" };
 
 export default async function Page(props: {
   searchParams?: Promise<{

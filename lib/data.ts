@@ -1,21 +1,26 @@
 import postgres from "postgres";
+import { cache } from "react";
 import type { Post } from "@/types/posts";
 
 const sql = postgres(process.env.DATABASE_URL!, { ssl: "require" });
 
-export async function fetchPostBySlug(slug: string): Promise<Post | null> {
-  try {
-    const post = await sql<Post[]>`
-      SELECT id, title, slug, created_at, published_at, updated_at, category, content, is_public
-      FROM posts
-      WHERE slug = ${slug}
-    `;
-    return post[0];
-  } catch (error) {
-    console.error("Error fetching post by slug:", error);
-    throw new Error("Failed to fetch post by slug");
-  }
-}
+// generateMetadata と Page で同一リクエスト中に二重に呼ばれるため、
+// React cache で重複クエリを排除する。
+export const fetchPostBySlug = cache(
+  async (slug: string): Promise<Post | null> => {
+    try {
+      const post = await sql<Post[]>`
+        SELECT id, title, slug, created_at, published_at, updated_at, category, content, is_public
+        FROM posts
+        WHERE slug = ${slug}
+      `;
+      return post[0];
+    } catch (error) {
+      console.error("Error fetching post by slug:", error);
+      throw new Error("Failed to fetch post by slug");
+    }
+  },
+);
 
 export async function fetchPostsMetaData(
   startFrom: number,

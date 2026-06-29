@@ -17,6 +17,7 @@
 - `DATABASE_URL` — PostgreSQL 接続文字列
 - `STORAGE_BUCKET_NAME` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_ENDPOINT_URL` — ストレージ接続
 - `NEXT_PUBLIC_STORAGE_PUBLIC_URL` — 画像の**公開**閲覧 URL（クライアントに露出。秘密を入れない）
+- `NEXT_PUBLIC_SITE_URL` — サイトの公開 URL。`metadataBase`（OG/canonical の絶対 URL 生成）に使用（クライアントに露出。未設定時は本番ドメインにフォールバック）
 - `AUTH_SECRET` — next-auth の署名鍵
 
 ## セキュリティ上の注意

@@ -34,6 +34,27 @@ export function mediaDisplayName(key: string): string {
   return key.replace(/^media\//, "");
 }
 
+// 記事本文(Markdown)から OG/description 用のプレーンテキスト抜粋を作る。
+// レンダリング結果ではなく原文を機械的に素朴化するだけ（完全な Markdown 解釈はしない）。
+export function buildExcerpt(content: string | null, maxLen = 120): string {
+  if (!content) return "";
+  const text = content
+    .replace(/```[\s\S]*?```/g, " ") // コードフェンス
+    .replace(/`[^`]*`/g, " ") // インラインコード
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // 画像
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // リンクはテキストだけ残す
+    .replace(/<[^>]+>/g, " ") // HTML タグ
+    .replace(/^[ \t]*>+[ \t]?/gm, "") // 引用記号
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, "") // 見出し
+    .replace(/^[ \t]*[-*+][ \t]+/gm, "") // 箇条書き記号
+    .replace(/^[ \t]*\d+\.[ \t]+/gm, "") // 番号付きリスト記号
+    .replace(/[*_~]/g, "") // 強調・打ち消し記号
+    .replace(/\s+/g, " ") // 連続空白・改行を単一スペースへ
+    .trim();
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen).trimEnd() + "…";
+}
+
 // メディア種別に応じた本文スニペット。
 // 画像・動画・音声は同じ `![caption](相対キー "caption")` 記法で挿入し、
 // lib/markdown.ts が拡張子から <img>/<video>/<audio> に振り分け、公開 URL への
