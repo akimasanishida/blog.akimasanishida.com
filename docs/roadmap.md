@@ -18,9 +18,9 @@
 
 | 機能 | Issue | 優先度 |
 | --- | --- | --- |
-| フッターの追加 | #25 | — |
+| フッターの追加 | #25 | 実装済み。[`components/Footer.tsx`](../components/Footer.tsx) |
 | メタデータの付与 | #24 | 実装済み。`app/layout.tsx` の既定＋各ページ `metadata`/`generateMetadata` |
-| ファビコンの変更 | #23 | — |
+| ファビコンの変更 | #23 | 実装済み。[`app/favicon.ico`](../app/favicon.ico)（App Router 自動検出） |
 
 ## 未実装の構想（Issue 未作成）
 
