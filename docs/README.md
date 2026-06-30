@@ -14,7 +14,7 @@
 | [architecture.md](./architecture.md) | システム全体像。リクエスト/データフロー、レイヤ構成 |
 | [routing.md](./routing.md) | サイトマップ（実装済み / 未実装の状態付き） |
 | [data-model.md](./data-model.md) | posts / users スキーマ（code 参照）とインデックス設計の根拠 |
-| [auth.md](./auth.md) | 認証フロー（next-auth v5・`/admin` 保護・bcrypt） |
+| [auth.md](./auth.md) | 認証フロー（next-auth v5・`/admin` 保護・bcryptjs） |
 | [content-pipeline.md](./content-pipeline.md) | Markdown → HTML 変換（remark/rehype・KaTeX・Prism） |
 | [infrastructure.md](./infrastructure.md) | Neon(Postgres)・R2(S3互換)・環境変数・デプロイ |
 | [development.md](./development.md) | セットアップ・コマンド・開発ワークフロー |

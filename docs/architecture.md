@@ -7,7 +7,7 @@
 - **Next.js 16 App Router**（React 19 / TypeScript strict） — SSR/RSC ベース
 - **PostgreSQL**（本番 [Neon](https://neon.com/)） — `postgres` パッケージで直接アクセス（ORM なし）
 - **S3 互換ストレージ**（本番 [Cloudflare R2](https://developers.cloudflare.com/r2/)） — 記事内メディア（画像・動画・音声）
-- **認証**: next-auth v5（beta）+ bcrypt
+- **認証**: next-auth v5（beta）+ bcryptjs
 - **UI**: shadcn（[`../components.json`](../components.json)・style `radix-nova`） + Tailwind CSS v4
 - **Markdown**: unified/remark/rehype パイプライン
 
@@ -21,7 +21,7 @@
 | Server Actions | [`../lib/actions.ts`](../lib/actions.ts) | フォーム処理（ログイン等） |
 | ドメインユーティリティ | [`../lib/markdown.ts`](../lib/markdown.ts) / [`../lib/definitions.ts`](../lib/definitions.ts) / [`../lib/utils.ts`](../lib/utils.ts) | Markdown 変換 / 日付書式(Asia/Tokyo) / `cn()` |
 | 型 | [`../types/`](../types/) | `Post` / `User`（アプリ型の SoT） |
-| 認証 | [`../auth.ts`](../auth.ts) / [`../auth.config.ts`](../auth.config.ts) / [`../proxy.ts`](../proxy.ts) | next-auth 設定とミドルウェア |
+| 認証 | [`../auth.ts`](../auth.ts) / [`../auth.config.ts`](../auth.config.ts) / [`../app/admin/layout.tsx`](../app/admin/layout.tsx) | next-auth 設定とレイアウトでの認可ガード |
 | 運用スクリプト | [`../scripts/`](../scripts/) | `seed.ts`（スキーマ+モック投入）/ `storage.ts`（画像アップロード） |
 
 ## データフロー
@@ -38,7 +38,7 @@
    パイプライン詳細は [content-pipeline.md](./content-pipeline.md)。
 
 ### 管理: `/admin`（認証必須）
-- [`proxy.ts`](../proxy.ts) のミドルウェアが `/admin/*` を保護。未ログインは `/login` へ。詳細は [auth.md](./auth.md)。
+- [`app/admin/layout.tsx`](../app/admin/layout.tsx) の `auth()` ガードが `/admin/*` を保護。未ログインは `/login` へ。詳細は [auth.md](./auth.md)。
 - `/admin/media`: R2 メディアの一覧・アップロード・削除・リネーム（[`lib/storage.ts`](../lib/storage.ts) / [routing.md](./routing.md)）。
 
 ## 設計上の要点

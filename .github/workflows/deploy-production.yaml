@@ -1,0 +1,44 @@
+name: Deploy (production)
+
+# main へ push（= PR マージ）で本番 Worker を更新する。
+# 公開ドメイン blog.akimasanishida.com は Cloudflare 側で本番 Worker に割り当てておく。
+on:
+  push:
+    branches: ["main"]
+
+# 本番デプロイは直列化（同時実行で取り違えないように）。
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # GitHub Environment "production" のシークレット/変数を参照する。
+    environment: production
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+
+      - name: Install pnpm and the packages
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          run_install: true
+
+      # ビルド時: 静的生成の Hyperdrive エミュレーションに接続文字列が要る（本番=prod Neon）。
+      # NEXT_PUBLIC_* はここでインライン化される。
+      - name: Build (OpenNext)
+        run: pnpm exec opennextjs-cloudflare build
+        env:
+          CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: ${{ secrets.HYPERDRIVE_LOCAL_CONNECTION_STRING }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_STORAGE_PUBLIC_URL: ${{ vars.NEXT_PUBLIC_STORAGE_PUBLIC_URL }}
+
+      # 実行時シークレット（AUTH_SECRET / STORAGE_*）は Cloudflare 側に設定済みのものを使う
+      # （`wrangler secret put`）。CI では触らない。
+      - name: Deploy to Cloudflare (production)
+        run: pnpm exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

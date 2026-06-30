@@ -25,7 +25,8 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.local)",
-      "Read(./.env.*.local)"
+      "Read(./.env.*.local)",
+      "Read(./.dev.vars)"
     ]
   },
   "hooks": {

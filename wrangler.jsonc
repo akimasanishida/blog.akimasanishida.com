@@ -1,0 +1,42 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "blog-akimasanishida-com",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2026-06-20",
+	// Next.js（Node ランタイム）を Workers で動かすために必須。
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	// Neon Postgres へは Hyperdrive 経由で接続する（lib/db.ts）。
+	// ローカルの dev/build（pnpm dev / preview / deploy のビルド時）は Hyperdrive を
+	// エミュレートするため接続文字列が必要。リポジトリに埋め込まず、環境変数
+	// CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE で渡す。
+	//
+	// 環境構成:
+	//   - top-level（= 本番）: `wrangler deploy`。prod Neon（blog-neon-prod）。
+	//     公開ドメイン blog.akimasanishida.com を割り当てる。
+	//   - env.staging（= PR プレビュー）: `wrangler deploy --env staging`。dev Neon
+	//     （blog-neon-dev）。worker 名 blog-akimasanishida-com-staging の workers.dev URL。
+	// main / compatibility_date / assets / flags は環境に継承される（hyperdrive と
+	// secret は継承されないので環境ごとに定義・設定する）。
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "1992c17485694748be55ddaae6fa9d66"
+		}
+	],
+	"env": {
+		"staging": {
+			"hyperdrive": [
+				{
+					"binding": "HYPERDRIVE",
+					"id": "f634613f3281438b96eb70161305b499"
+				}
+			]
+		}
+	}
+}
