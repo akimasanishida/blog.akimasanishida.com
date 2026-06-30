@@ -17,8 +17,10 @@ const geistMono = Geist_Mono({
 
 const SITE_NAME = "西田明正のブログ";
 const SITE_DESCRIPTION = "西田明正の個人ブログ。";
+// `||` で空文字（CI で未設定の Variable は "" として渡る）も本番ドメインに
+// フォールバックさせる（new URL("") のクラッシュ防止）。
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://blog.akimasanishida.com";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://blog.akimasanishida.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -3,34 +3,8 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 type Sql = ReturnType<typeof postgres>;
 
-let sql: Sql | undefined;
-
-// DB 接続を遅延生成して使い回す（postgres クライアントは module 内で 1 度だけ）。
-// Cloudflare Workers では Hyperdrive バインディング経由で接続する（接続プール＋クエリ
-// キャッシュ）。Hyperdrive が無い文脈（`next build` の静的生成・vitest・素の Node で
-// 動く scripts/*.ts）では DATABASE_URL に直接フォールバックする。
-export function getSql(): Sql {
-  if (sql) return sql;
-
-  let connectionString = process.env.DATABASE_URL;
-  let viaHyperdrive = false;
-  try {
-    const { env } = getCloudflareContext();
-    if (env.HYPERDRIVE?.connectionString) {
-      connectionString = env.HYPERDRIVE.connectionString;
-      viaHyperdrive = true;
-    }
-  } catch {
-    // Cloudflare 実行コンテキスト外（build / test / script）。DATABASE_URL を使う。
-  }
-
-  if (!connectionString) {
-    throw new Error(
-      "No database connection string: set the HYPERDRIVE binding or DATABASE_URL.",
-    );
-  }
-
-  sql = postgres(
+function createClient(connectionString: string, viaHyperdrive: boolean): Sql {
+  return postgres(
     connectionString,
     viaHyperdrive
       ? // Hyperdrive 経由（Cloudflare 公式推奨設定）。TLS はコードで固定せず接続文字列の
@@ -40,5 +14,51 @@ export function getSql(): Sql {
       : // 直結（vitest・scripts 等の素の Node で DATABASE_URL を使う場合）は SSL 必須。
         { ssl: "require" },
   );
-  return sql;
+}
+
+function resolve(): { cs: string; viaHyperdrive: boolean; ctx?: object } {
+  let ctx: object | undefined;
+  let cs = process.env.DATABASE_URL;
+  let viaHyperdrive = false;
+  try {
+    const c = getCloudflareContext();
+    ctx = c;
+    // HYPERDRIVE バインディングの型は wrangler 生成の cloudflare-env.d.ts に入るが、
+    // それは git 管理外で CI に存在しないため、生成型に依存せずローカル型で参照する。
+    const hyperdrive = (c.env as { HYPERDRIVE?: { connectionString?: string } })
+      .HYPERDRIVE;
+    if (hyperdrive?.connectionString) {
+      cs = hyperdrive.connectionString;
+      viaHyperdrive = true;
+    }
+  } catch {
+    // Cloudflare 実行コンテキスト外（build / test / script）。DATABASE_URL を使う。
+  }
+  if (!cs) {
+    throw new Error(
+      "No database connection string: set the HYPERDRIVE binding or DATABASE_URL.",
+    );
+  }
+  return { cs, viaHyperdrive, ctx };
+}
+
+// Workers では I/O（DB ソケット）をリクエストをまたいで再利用できない（別リクエストの
+// I/O を使うと例外＝ Error 1101）。そのため Cloudflare 実行時は **リクエスト単位**
+// （getCloudflareContext が返す request スコープのオブジェクト）でクライアントを生成・
+// 共有する。それ以外（単一プロセスの build / test / script）は module で 1 つ使い回す。
+const perRequest = new WeakMap<object, Sql>();
+let processWide: Sql | undefined;
+
+export function getSql(): Sql {
+  const { cs, viaHyperdrive, ctx } = resolve();
+  if (ctx) {
+    let sql = perRequest.get(ctx);
+    if (!sql) {
+      sql = createClient(cs, viaHyperdrive);
+      perRequest.set(ctx, sql);
+    }
+    return sql;
+  }
+  if (!processWide) processWide = createClient(cs, viaHyperdrive);
+  return processWide;
 }
