@@ -5,7 +5,7 @@ import { listMedia } from "@/lib/storage";
 
 export const metadata: Metadata = { title: "記事の新規作成" };
 
-// /admin 配下のため proxy.ts のミドルウェアで自動的に認証保護される。
+// /admin 配下のため app/admin/layout.tsx の auth() ガードで認証保護される。
 export default async function Page() {
   const [categories, media] = await Promise.all([
     fetchCategories(),

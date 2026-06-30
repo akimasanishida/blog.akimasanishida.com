@@ -54,7 +54,7 @@ export async function checkSlugAvailability(
 }
 
 export async function savePost(input: SavePostInput): Promise<PostActionState> {
-  // /admin はミドルウェアで保護されるが、書き込みは多層防御として再確認する。
+  // /admin はレイアウトの auth() ガードで保護されるが、書き込みは多層防御として再確認する。
   const session = await auth();
   if (!session) return { status: "error", message: "認証が必要です。" };
 
