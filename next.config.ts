@@ -13,3 +13,8 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// OpenNext（Cloudflare）デプロイ用。`next dev` 中も Cloudflare バインディング
+// （Hyperdrive 等）を getCloudflareContext() 経由で参照できるようにする。
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+void initOpenNextCloudflareForDev();

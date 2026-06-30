@@ -44,8 +44,12 @@ yarn-error.log*
 # generated docs site (docs/*.md が正本。HTML は pnpm docs:build で生成)
 docs/_site/
 
-# vercel
-.vercel
+# cloudflare / opennext
+.open-next/
+.wrangler/
+.dev.vars*
+# wrangler の生成型（実行時型を含み巨大）。pnpm cf-typegen で再生成する。
+cloudflare-env.d.ts
 
 # typescript
 *.tsbuildinfo

@@ -9,9 +9,10 @@
 `blog.akimasanishida.com` の個人ブログ（リニューアル版）。
 
 - **Next.js 16 App Router** (React 19 / TypeScript strict)
-- **PostgreSQL**（本番は [Neon](https://neon.com/)）
+- ホスティングは **Cloudflare Workers + OpenNext**（`@opennextjs/cloudflare`）
+- **PostgreSQL**（本番は [Neon](https://neon.com/)、Workers からは Hyperdrive 経由）
 - **S3 互換ストレージ**（本番は [Cloudflare R2](https://developers.cloudflare.com/r2/)）
-- 認証は **next-auth v5（beta）**、パスワードは bcrypt
+- 認証は **next-auth v5（beta）**、パスワードは bcryptjs（Workers でネイティブ bcrypt 不可のため）
 
 ## ディレクトリ地図
 
@@ -20,13 +21,15 @@
 | `app/` | App Router のページ・レイアウト。`admin/` は認証付き管理画面 |
 | `components/` | React コンポーネント。`components/ui/` は **shadcn**（再利用優先） |
 | `lib/data.ts` | PostgreSQL クエリ（`fetchPostBySlug` 等） |
+| `lib/db.ts` | DB 接続（`getSql()`）。Workers では Hyperdrive 経由、それ以外は `DATABASE_URL` |
 | `lib/actions.ts` | Server Actions（`authenticate` 等） |
 | `lib/markdown.ts` | unified/remark/rehype による Markdown→HTML |
 | `lib/definitions.ts` | 日付フォーマット（**Asia/Tokyo**） |
 | `lib/utils.ts` | Tailwind の `cn()` |
 | `types/` | `Post` / `User` 型定義 |
 | `scripts/` | `seed.ts`・`storage.ts`（**破壊的・ローカル専用**）・`build-docs.ts`（docs→HTML 生成） |
-| `auth.ts` / `auth.config.ts` / `proxy.ts` | next-auth 設定とミドルウェア |
+| `auth.ts` / `auth.config.ts` | next-auth 設定。`/admin/*` 保護は `app/admin/layout.tsx` の `auth()` ガード（middleware は使わない） |
+| `wrangler.jsonc` / `open-next.config.ts` | Cloudflare Workers + OpenNext のデプロイ設定（[`docs/infrastructure.md`](./docs/infrastructure.md)） |
 | `docs/` | プロジェクトドキュメント（**Markdown が正本**）。索引は `docs/README.md` |
 | `docs/_site/` | `pnpm docs:build` で生成する人間向け HTML（**git 管理外**） |
 
@@ -35,7 +38,10 @@
 | コマンド | 用途 |
 | --- | --- |
 | `pnpm dev` | 開発サーバー |
-| `pnpm build` | 本番ビルド |
+| `pnpm build` | `next build`（CI 参考用） |
+| `pnpm preview` | OpenNext でビルドし workerd でローカル実行（要 Hyperdrive ローカル接続文字列） |
+| `pnpm deploy` | OpenNext でビルドし Cloudflare Workers へデプロイ |
+| `pnpm cf-typegen` | `wrangler.jsonc` から `cloudflare-env.d.ts` を再生成（**git 管理外**） |
 | `pnpm lint` | ESLint（**CI と同等。PR 前に必須**） |
 | `npx tsc --noEmit` | 型チェック（CI には無いので手元で実施推奨） |
 | `pnpm test` | Vitest 単体テスト（ロジック層・**CI 同等**） |
@@ -66,12 +72,13 @@
   - Issue あり: `#<番号>_<説明>`（例: `#18_admin_media`）。
   - Issue 無し: `<種別>/<説明>`（例: `chore/create_pr_docs_check`、種別は feat/fix/docs/chore/refactor/revert 等）。
 - 機能実装は **plan mode** で計画 → 承認 → 実装。
+- デプロイは GitHub Actions: **PR → main** で staging（dev DB・非公開 workers.dev）へ、**main マージ**で本番へ自動デプロイ（[`docs/infrastructure.md`](./docs/infrastructure.md)）。
 - PR 前に `pnpm lint`（必要なら `npx tsc --noEmit`）を通す。
 - PR は [`.github/pull_request_template.md`](./.github/pull_request_template.md)（概要 / コード / テスト）に従う。
 - 破壊的スクリプト・push・PR 作成・依存変更は確認プロンプトが出る（`.claude/settings.json` の `ask`）。
 
 ## 既知の負債（別 Issue 候補）
 
-- テスト整備は途上。CI（`.github/workflows/check.yaml`）は `pnpm lint` ＋ `pnpm test`（Vitest 単体）。型チェックと Playwright E2E は CI 未投入（E2E はローカル DB/R2 が前提のため）。
+- テスト整備は途上。CI（`.github/workflows/check.yaml`）は `pnpm lint` ＋ `pnpm test`（Vitest 単体）。型チェックと Playwright E2E は CI 未投入（E2E はローカル DB/R2 が前提のため）。デプロイは `deploy-preview.yaml`（PR→staging）/ `deploy-production.yaml`（main→本番）。`check` を必須チェックにするブランチ保護は手動設定が前提。
 - next-auth が v5 **beta**。
 - DB マイグレーション機構が無く、スキーマは `scripts/seed.ts` の `CREATE TABLE IF NOT EXISTS` に依存。スキーマ SoT のマイグレーション機構移行を別 Issue で検討中（作成後に番号を記入: #TBD）。

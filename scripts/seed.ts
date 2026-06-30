@@ -1,7 +1,7 @@
 import postgres from "postgres";
 import type { Post } from "@/types/posts";
 import type { User } from "@/types/users";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const sql = postgres(process.env.DATABASE_URL!, { ssl: "require" });
 

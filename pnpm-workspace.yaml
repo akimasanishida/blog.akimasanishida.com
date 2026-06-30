@@ -1,13 +1,13 @@
 allowBuilds:
-  bcrypt: true
   esbuild: true
   sharp: true
   unrs-resolver: true
+  workerd: true
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
 onlyBuiltDependencies:
-  - bcrypt
+  - workerd
 # dev/ビルドツール経由の推移的依存（本番ランタイム非依存）の脆弱性をパッチ版へ固定。
 # 複数メジャーが同居するものはメジャー指定キーで個別固定する。
 overrides:

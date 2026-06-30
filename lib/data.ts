@@ -1,13 +1,12 @@
-import postgres from "postgres";
 import { cache } from "react";
 import type { Post } from "@/types/posts";
-
-const sql = postgres(process.env.DATABASE_URL!, { ssl: "require" });
+import { getSql } from "./db";
 
 // generateMetadata と Page で同一リクエスト中に二重に呼ばれるため、
 // React cache で重複クエリを排除する。
 export const fetchPostBySlug = cache(
   async (slug: string): Promise<Post | null> => {
+    const sql = getSql();
     try {
       const post = await sql<Post[]>`
         SELECT id, title, slug, created_at, published_at, updated_at, category, content, is_public
@@ -29,6 +28,7 @@ export async function fetchPostsMetaData(
   order: "asc" | "desc" = "desc",
   sortBy: "published_at" | "updated_at" = "published_at",
 ): Promise<Post[] | null> {
+  const sql = getSql();
   const direction = order === "asc" ? sql`ASC` : sql`DESC`;
   // 更新日時ソートは updated_at → published_at → created_at の順でフォールバック
   // （公開済み未更新は published_at、下書きは created_at に落ちる）
@@ -58,6 +58,7 @@ export async function fetchPostsMetaData(
 export async function fetchTotalPostsCount(
   includeDraft: boolean = false,
 ): Promise<number> {
+  const sql = getSql();
   try {
     const result = await sql<{ count: number }[]>`
       SELECT COUNT(*) AS count
@@ -72,6 +73,7 @@ export async function fetchTotalPostsCount(
 }
 
 export async function fetchPostById(id: string): Promise<Post | null> {
+  const sql = getSql();
   try {
     const post = await sql<Post[]>`
       SELECT id, title, slug, created_at, published_at, updated_at, category, content, is_public
@@ -88,6 +90,7 @@ export async function fetchPostById(id: string): Promise<Post | null> {
 }
 
 export async function fetchCategories(): Promise<string[]> {
+  const sql = getSql();
   try {
     const rows = await sql<{ category: string }[]>`
       SELECT DISTINCT category
@@ -107,6 +110,7 @@ export async function isSlugAvailable(
   slug: string,
   excludeId?: string,
 ): Promise<boolean> {
+  const sql = getSql();
   try {
     const rows = await sql<{ taken: boolean }[]>`
       SELECT EXISTS (
@@ -137,6 +141,7 @@ export type PostWriteInput = {
 export async function createPost(
   input: PostWriteInput,
 ): Promise<{ id: string; slug: string }> {
+  const sql = getSql();
   const rows = await sql<{ id: string; slug: string }[]>`
     INSERT INTO posts (title, slug, category, content, published_at, is_public)
     VALUES (${input.title}, ${input.slug}, ${input.category}, ${input.content}, ${input.published_at}, ${input.is_public})
@@ -152,6 +157,7 @@ export async function updatePost(
   id: string,
   input: PostWriteInput,
 ): Promise<void> {
+  const sql = getSql();
   await sql`
     UPDATE posts
     SET title = ${input.title},
@@ -166,6 +172,7 @@ export async function updatePost(
 }
 
 export async function deletePost(id: string): Promise<void> {
+  const sql = getSql();
   await sql`DELETE FROM posts WHERE id = ${id}`;
 }
 
@@ -175,6 +182,7 @@ export async function setPostPublic(
   id: string,
   isPublic: boolean,
 ): Promise<void> {
+  const sql = getSql();
   await sql`
     UPDATE posts
     SET is_public = ${isPublic},

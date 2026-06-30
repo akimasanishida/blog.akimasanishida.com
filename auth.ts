@@ -3,12 +3,11 @@ import { authConfig } from "./auth.config";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import type { User } from "@/types/users";
-import bcrypt from "bcrypt";
-import postgres from "postgres";
-
-const sql = postgres(process.env.DATABASE_URL!, { ssl: "require" });
+import bcrypt from "bcryptjs";
+import { getSql } from "@/lib/db";
 
 async function getUser(email: string): Promise<User | undefined> {
+  const sql = getSql();
   try {
     const user = await sql<User[]>`SELECT * FROM users WHERE email=${email}`;
     return user[0];
