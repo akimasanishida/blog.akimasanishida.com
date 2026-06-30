@@ -1,6 +1,6 @@
 # 認証
 
-> 事実は code が source of truth: [`auth.ts`](../auth.ts) / [`auth.config.ts`](../auth.config.ts) / [`app/admin/layout.tsx`](../app/admin/layout.tsx)。
+> 事実は code が source of truth: [`auth.ts`](../auth.ts) / [`auth.config.ts`](../auth.config.ts) / [`app/api/auth/[...nextauth]/route.ts`](../app/api/auth/%5B...nextauth%5D/route.ts) / [`app/admin/layout.tsx`](../app/admin/layout.tsx)。
 
 ## 概要
 
@@ -16,6 +16,11 @@
    - 入力を **zod** で検証（`email` 形式・`password` 6 文字以上）。
    - `getUser(email)` で users を 1 件取得 → `bcryptjs.compare` で照合。一致すれば User を返す。
 4. 失敗時は `authenticate()` が日本語エラーメッセージを返す（`CredentialsSignin` 等）。
+
+> next-auth の API（`/api/auth/*`：`callback/credentials`・`session`・`csrf` 等）は
+> [`app/api/auth/[...nextauth]/route.ts`](../app/api/auth/%5B...nextauth%5D/route.ts) が
+> `auth.ts` の `handlers` をマウントして提供する。Credentials のサインインはこの
+> `callback/credentials` を叩くため必須（無いと 404）。
 
 ## 認可（レイアウトガード）
 
