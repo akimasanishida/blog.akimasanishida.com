@@ -16,8 +16,13 @@ export function getSql(): Sql {
   let viaHyperdrive = false;
   try {
     const { env } = getCloudflareContext();
-    if (env.HYPERDRIVE?.connectionString) {
-      connectionString = env.HYPERDRIVE.connectionString;
+    // HYPERDRIVE バインディングの型は wrangler 生成の cloudflare-env.d.ts に入るが、
+    // それは git 管理外で CI に存在しないため、ここでは生成型に依存せずローカル型で
+    // 参照する（実行時の挙動は同じ）。
+    const hyperdrive = (env as { HYPERDRIVE?: { connectionString?: string } })
+      .HYPERDRIVE;
+    if (hyperdrive?.connectionString) {
+      connectionString = hyperdrive.connectionString;
       viaHyperdrive = true;
     }
   } catch {
