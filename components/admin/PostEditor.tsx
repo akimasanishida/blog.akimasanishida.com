@@ -141,31 +141,44 @@ export default function PostEditor({
     // 保存に伴う遷移では離脱警告を出さない（redirect でこの後 unmount される場合も含む）。
     isSavingRef.current = true;
     startSaving(async () => {
-      const result = await savePost({
-        id: initialPost?.id,
-        title,
-        slug,
-        category,
-        content,
-        publishedAtText: dateText,
-        intent,
-      });
-      // 新規作成成功時は Server Action が編集ページへ redirect するため、
-      // ここに戻ってくるのはエラー時か既存記事の更新成功時のみ。
-      if (result?.status === "error") {
-        // 保存失敗＝遷移しないので、ガードを再武装する。
+      try {
+        const result = await savePost({
+          id: initialPost?.id,
+          title,
+          slug,
+          category,
+          content,
+          publishedAtText: dateText,
+          intent,
+        });
+        // 新規作成成功時は Server Action が編集ページへ redirect するため、
+        // ここに戻ってくるのはエラー時か既存記事の更新成功時のみ。
+        if (result?.status === "error") {
+          // 保存失敗＝遷移しないので、ガードを再武装する。
+          isSavingRef.current = false;
+          setFeedback({ type: "error", text: result.message });
+        } else {
+          // 保存できたので dirty 基準を現在値に更新（離脱警告を解除）。
+          setBaseline({ title, slug, category, content, dateText });
+          isSavingRef.current = false;
+          setFeedback(
+            result?.status === "success"
+              ? { type: "success", text: result.message }
+              : null,
+          );
+          router.refresh();
+        }
+      } catch (error) {
+        // redirect() 由来（NEXT_REDIRECT）は正常な遷移。握りつぶすとナビゲーションが
+        // 壊れるので、そのまま再 throw する。
+        const digest = (error as { digest?: unknown }).digest;
+        if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+          throw error;
+        }
+        // それ以外の例外（通信失敗等）は保存フラグを再武装し、離脱警告を復活させる
+        // （true のまま残すと未保存の変更が黙って失われうるため）。
         isSavingRef.current = false;
-        setFeedback({ type: "error", text: result.message });
-      } else {
-        // 保存できたので dirty 基準を現在値に更新（離脱警告を解除）。
-        setBaseline({ title, slug, category, content, dateText });
-        isSavingRef.current = false;
-        setFeedback(
-          result?.status === "success"
-            ? { type: "success", text: result.message }
-            : null,
-        );
-        router.refresh();
+        setFeedback({ type: "error", text: "保存に失敗しました。" });
       }
     });
   }

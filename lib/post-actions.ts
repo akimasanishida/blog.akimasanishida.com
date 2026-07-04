@@ -9,6 +9,7 @@ import {
   deletePost,
   setPostPublic,
   isSlugAvailable,
+  fetchPostById,
 } from "@/lib/data";
 import { SLUG_PATTERN, toTokyoISODate } from "@/lib/post-format";
 
@@ -155,6 +156,19 @@ export async function togglePublicAction(
 ): Promise<PostActionState> {
   const session = await auth();
   if (!session) return { status: "error", message: "認証が必要です。" };
+
+  // 下書きは URL(slug) 未設定を許容するため、公開経路でも URL 必須を担保する
+  // （URL 無しで公開すると /posts/<slug> が生成できず公開ページが壊れる）。
+  if (isPublic) {
+    const post = await fetchPostById(id);
+    if (!post) return { status: "error", message: "記事が見つかりません。" };
+    if (!post.slug) {
+      return {
+        status: "error",
+        message: "公開するには URL が必要です。記事を開いて URL を設定してください。",
+      };
+    }
+  }
 
   try {
     await setPostPublic(id, isPublic);
