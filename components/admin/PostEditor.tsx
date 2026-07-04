@@ -117,6 +117,11 @@ export default function PostEditor({
     isDirtyRef.current = isDirty;
   }, [isDirty]);
 
+  // 保存に伴う意図的な遷移（新規作成後の redirect 等）中は離脱警告を抑止する。
+  // 本番（workerd）ではこの redirect がハードナビゲーションになり、dirty のまま
+  // unload されて beforeunload が誤発火するため、保存中はガードを一律で無効化する。
+  const isSavingRef = React.useRef(false);
+
   // ---- 保存・公開 ----
   const [isSaving, startSaving] = React.useTransition();
   const [feedback, setFeedback] = React.useState<
@@ -133,29 +138,49 @@ export default function PostEditor({
     }
 
     setFeedback(null);
+    // 離脱警告の抑止は「新規作成（成功時に編集ページへ redirect する）」のときだけ。
+    // 既存記事の更新は redirect せず（router.refresh のみ）誤発火しないので、保存中も
+    // 離脱ガードを効かせたままにする（通信失敗時の未保存離脱を見逃さない）。
+    isSavingRef.current = !initialPost?.id;
     startSaving(async () => {
-      const result = await savePost({
-        id: initialPost?.id,
-        title,
-        slug,
-        category,
-        content,
-        publishedAtText: dateText,
-        intent,
-      });
-      // 新規作成成功時は Server Action が編集ページへ redirect するため、
-      // ここに戻ってくるのはエラー時か既存記事の更新成功時のみ。
-      if (result?.status === "error") {
-        setFeedback({ type: "error", text: result.message });
-      } else {
-        // 保存できたので dirty 基準を現在値に更新（離脱警告を解除）。
-        setBaseline({ title, slug, category, content, dateText });
-        setFeedback(
-          result?.status === "success"
-            ? { type: "success", text: result.message }
-            : null,
-        );
-        router.refresh();
+      try {
+        const result = await savePost({
+          id: initialPost?.id,
+          title,
+          slug,
+          category,
+          content,
+          publishedAtText: dateText,
+          intent,
+        });
+        // 新規作成成功時は Server Action が編集ページへ redirect するため、
+        // ここに戻ってくるのはエラー時か既存記事の更新成功時のみ。
+        if (result?.status === "error") {
+          // 保存失敗＝遷移しないので、ガードを再武装する。
+          isSavingRef.current = false;
+          setFeedback({ type: "error", text: result.message });
+        } else {
+          // 保存できたので dirty 基準を現在値に更新（離脱警告を解除）。
+          setBaseline({ title, slug, category, content, dateText });
+          isSavingRef.current = false;
+          setFeedback(
+            result?.status === "success"
+              ? { type: "success", text: result.message }
+              : null,
+          );
+          router.refresh();
+        }
+      } catch (error) {
+        // redirect() 由来（NEXT_REDIRECT）は正常な遷移。握りつぶすとナビゲーションが
+        // 壊れるので、そのまま再 throw する。
+        const digest = (error as { digest?: unknown }).digest;
+        if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+          throw error;
+        }
+        // それ以外の例外（通信失敗等）は保存フラグを再武装し、離脱警告を復活させる
+        // （true のまま残すと未保存の変更が黙って失われうるため）。
+        isSavingRef.current = false;
+        setFeedback({ type: "error", text: "保存に失敗しました。" });
       }
     });
   }
@@ -199,11 +224,13 @@ export default function PostEditor({
     if (!isDirty) return;
 
     function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
       e.preventDefault();
       e.returnValue = "";
     }
 
     function onClickCapture(e: MouseEvent) {
+      if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
       if (
         e.defaultPrevented ||
         e.button !== 0 ||
@@ -256,6 +283,7 @@ export default function PostEditor({
     if (nav) {
       const onNavigate = (e: NavEventLike) => {
         if (e.navigationType !== "traverse" || !e.cancelable) return;
+        if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
         if (isDirtyRef.current && !window.confirm(message)) {
           e.preventDefault(); // 留まる
         }
@@ -267,6 +295,7 @@ export default function PostEditor({
     // フォールバック: sentinel を積んで popstate で受け止める。
     window.history.pushState(null, "", window.location.href);
     const onPopState = () => {
+      if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
       if (isDirtyRef.current && !window.confirm(message)) {
         window.history.pushState(null, "", window.location.href); // 留まる
         return;
@@ -345,7 +374,7 @@ export default function PostEditor({
               id="publishedAt"
               value={dateText}
               onChange={(e) => handleDateTextChange(e.target.value)}
-              placeholder="2026/06/28"
+              placeholder="yyyy/mm/dd"
               className="flex-1"
             />
             <Popover>

@@ -129,7 +129,7 @@ export async function isSlugAvailable(
 // 記事の作成・更新で受け取る値。created_at/updated_at は DB 側で管理する。
 export type PostWriteInput = {
   title: string | null;
-  slug: string;
+  slug: string | null; // 下書きは URL 未設定（null）を許容。公開時のみ必須（呼び出し側で担保）
   category: string | null;
   content: string | null;
   published_at: string | null; // ISO 文字列（Asia/Tokyo で整形済み）または null
@@ -140,9 +140,9 @@ export type PostWriteInput = {
 // ここでは postgres のエラーをそのまま伝播させる。
 export async function createPost(
   input: PostWriteInput,
-): Promise<{ id: string; slug: string }> {
+): Promise<{ id: string; slug: string | null }> {
   const sql = getSql();
-  const rows = await sql<{ id: string; slug: string }[]>`
+  const rows = await sql<{ id: string; slug: string | null }[]>`
     INSERT INTO posts (title, slug, category, content, published_at, is_public)
     VALUES (${input.title}, ${input.slug}, ${input.category}, ${input.content}, ${input.published_at}, ${input.is_public})
     RETURNING id, slug

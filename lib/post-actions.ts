@@ -9,6 +9,7 @@ import {
   deletePost,
   setPostPublic,
   isSlugAvailable,
+  fetchPostById,
 } from "@/lib/data";
 import { SLUG_PATTERN, toTokyoISODate } from "@/lib/post-format";
 
@@ -63,10 +64,12 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
   const category = input.category.trim();
   const publish = input.intent === "publish";
 
-  if (!slug) {
-    return { status: "error", message: "URL（slug）を入力してください。" };
+  // 下書きは URL 未設定で保存できる（DB では slug=NULL）。公開時のみ URL 必須。
+  if (publish && !slug) {
+    return { status: "error", message: "URLを入力してください。" };
   }
-  if (!SLUG_PATTERN.test(slug)) {
+  // URL を入力しているなら（下書き・公開を問わず）書式は検証する。
+  if (slug && !SLUG_PATTERN.test(slug)) {
     return {
       status: "error",
       message:
@@ -81,7 +84,7 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
   if (input.publishedAtText.trim() && publishedAt === null) {
     return {
       status: "error",
-      message: "公開日は 2026/06/28 形式で入力してください。",
+      message: "公開日は yyyy/mm/dd 形式で入力してください。",
     };
   }
   // 公開で日付未指定なら現在時刻を公開日時にする。
@@ -89,7 +92,7 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
 
   const data = {
     title: title || null,
-    slug,
+    slug: slug || null,
     category: category || null,
     content: input.content || null,
     published_at: publishedAt,
@@ -153,6 +156,19 @@ export async function togglePublicAction(
 ): Promise<PostActionState> {
   const session = await auth();
   if (!session) return { status: "error", message: "認証が必要です。" };
+
+  // 下書きは URL(slug) 未設定を許容するため、公開経路でも URL 必須を担保する
+  // （URL 無しで公開すると /posts/<slug> が生成できず公開ページが壊れる）。
+  if (isPublic) {
+    const post = await fetchPostById(id);
+    if (!post) return { status: "error", message: "記事が見つかりません。" };
+    if (!post.slug) {
+      return {
+        status: "error",
+        message: "公開するには URL が必要です。記事を開いて URL を設定してください。",
+      };
+    }
+  }
 
   try {
     await setPostPublic(id, isPublic);

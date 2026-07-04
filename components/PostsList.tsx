@@ -12,9 +12,14 @@ export default function PostsList({title, posts}: { title: string; posts: Post[]
       <ul>
         {posts?.map((post) => (
           <li key={post.id}>
-            <Link href={`/posts/${post.slug}`}>
-              <h2 className="text-2xl text-blue-500 mb-3">{post.title}</h2>
-            </Link>
+            {/* URL 未設定の記事はリンクにしない（多層防御。通常は公開時に URL 必須） */}
+            {post.slug ? (
+              <Link href={`/posts/${post.slug}`}>
+                <h2 className="text-2xl text-blue-500 mb-3">{post.title}</h2>
+              </Link>
+            ) : (
+              <h2 className="text-2xl mb-3">{post.title}</h2>
+            )}
             <PostMetadata
               publishedAt={post.published_at}
               updatedAt={post.updated_at}

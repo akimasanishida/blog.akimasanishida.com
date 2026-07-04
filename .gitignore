@@ -37,6 +37,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env
 .env.local
+.env.staging
 
 # Claude Code (個人ローカル上書きのみ無視。settings.json / hooks / commands は共有)
 .claude/settings.local.json
