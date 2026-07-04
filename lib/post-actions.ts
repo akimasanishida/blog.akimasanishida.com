@@ -84,7 +84,7 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
   if (input.publishedAtText.trim() && publishedAt === null) {
     return {
       status: "error",
-      message: "公開日は yyyy/mm/dd 形式で入力してください。",
+      message: "公開日は yyyy/MM/dd 形式で入力してください。",
     };
   }
   // 公開で日付未指定なら現在時刻を公開日時にする。

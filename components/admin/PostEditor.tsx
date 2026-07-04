@@ -138,8 +138,10 @@ export default function PostEditor({
     }
 
     setFeedback(null);
-    // 保存に伴う遷移では離脱警告を出さない（redirect でこの後 unmount される場合も含む）。
-    isSavingRef.current = true;
+    // 離脱警告の抑止は「新規作成（成功時に編集ページへ redirect する）」のときだけ。
+    // 既存記事の更新は redirect せず（router.refresh のみ）誤発火しないので、保存中も
+    // 離脱ガードを効かせたままにする（通信失敗時の未保存離脱を見逃さない）。
+    isSavingRef.current = !initialPost?.id;
     startSaving(async () => {
       try {
         const result = await savePost({
@@ -372,7 +374,7 @@ export default function PostEditor({
               id="publishedAt"
               value={dateText}
               onChange={(e) => handleDateTextChange(e.target.value)}
-              placeholder="yyyy/mm/dd"
+              placeholder="yyyy/MM/dd"
               className="flex-1"
             />
             <Popover>
