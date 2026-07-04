@@ -374,7 +374,7 @@ export default function PostEditor({
               id="publishedAt"
               value={dateText}
               onChange={(e) => handleDateTextChange(e.target.value)}
-              placeholder="yyyy/MM/dd"
+              placeholder="yyyy/mm/dd"
               className="flex-1"
             />
             <Popover>
