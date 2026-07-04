@@ -63,10 +63,12 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
   const category = input.category.trim();
   const publish = input.intent === "publish";
 
-  if (!slug) {
-    return { status: "error", message: "URL（slug）を入力してください。" };
+  // 下書きは URL 未設定で保存できる（DB では slug=NULL）。公開時のみ URL 必須。
+  if (publish && !slug) {
+    return { status: "error", message: "URLを入力してください。" };
   }
-  if (!SLUG_PATTERN.test(slug)) {
+  // URL を入力しているなら（下書き・公開を問わず）書式は検証する。
+  if (slug && !SLUG_PATTERN.test(slug)) {
     return {
       status: "error",
       message:
@@ -89,7 +91,7 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
 
   const data = {
     title: title || null,
-    slug,
+    slug: slug || null,
     category: category || null,
     content: input.content || null,
     published_at: publishedAt,

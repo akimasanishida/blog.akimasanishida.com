@@ -35,3 +35,25 @@ test("新規作成して公開し、公開ページに表示される", async ({
   await row.getByRole("button", { name: "削除" }).click();
   await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(0);
 });
+
+// 下書きは URL（slug）未入力でも保存できる（公開時のみ URL 必須）。
+test("URL 未入力でも下書き保存できる", async ({ page }) => {
+  const title = `E2E下書きURLなし ${Date.now()}`;
+
+  page.on("dialog", (d) => d.accept()); // 削除確認を自動承認
+
+  await page.goto("/admin/posts/new");
+  await page.getByLabel("タイトル").fill(title);
+  await page.locator("#content").fill("URL なし下書き本文");
+
+  // URL 未入力のまま下書き保存 → エラーにならず編集ページへ遷移する。
+  await page.getByRole("button", { name: "下書き保存" }).click();
+  await expect(page.getByRole("heading", { name: "記事を編集" })).toBeVisible();
+  await expect(page.getByText("URLを入力してください。")).toHaveCount(0);
+
+  // 後始末: 一覧から削除
+  await page.goto("/admin");
+  const row = page.getByRole("row").filter({ hasText: title });
+  await row.getByRole("button", { name: "削除" }).click();
+  await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(0);
+});
