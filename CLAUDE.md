@@ -74,6 +74,7 @@
 - 機能実装は **plan mode** で計画 → 承認 → 実装。
 - デプロイは GitHub Actions: **PR → main** で staging（dev DB・非公開 workers.dev）へ、**main マージ**で本番へ自動デプロイ（[`docs/infrastructure.md`](./docs/infrastructure.md)）。
 - PR 前に `pnpm lint`（必要なら `npx tsc --noEmit`）を通す。
+- コードレビューは `/review`（`.claude/agents/code-reviewer.md` の**コンテキストを持たないサブエージェント**が差分をレビューし `REVIEW_RESULT: PASS/BLOCK` を返す）。`/create-pr` はこれを内部で自動実行し、重大（Critical/Major）指摘があれば PR 作成をブロックする。
 - PR は [`.github/pull_request_template.md`](./.github/pull_request_template.md)（概要 / コード / テスト）に従う。
 - 破壊的スクリプト・push・PR 作成・依存変更は確認プロンプトが出る（`.claude/settings.json` の `ask`）。
 

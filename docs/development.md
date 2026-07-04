@@ -36,6 +36,7 @@
   - Issue 無し: `<種別>/<説明>`（例: `chore/create_pr_docs_check`、種別は feat/fix/docs/chore/refactor/revert 等）。
 - 機能実装は plan mode で計画 → 承認 → 実装。
 - PR 前に `pnpm lint`（必要なら `npx tsc --noEmit`）。PR は [`../.github/pull_request_template.md`](../.github/pull_request_template.md) に従う。
+- **コードレビューは `/review`**（[`../.claude/agents/code-reviewer.md`](../.claude/agents/code-reviewer.md) の**コンテキストを持たないサブエージェント**が差分をレビューし `REVIEW_RESULT: PASS/BLOCK` を返す）。[`../.claude/skills/create-pr/SKILL.md`](../.claude/skills/create-pr/SKILL.md) が内部で自動実行し、重大（Critical/Major）指摘は PR 作成をブロックする。
 - **PR 作成前に必ず docs の整合をチェックする**（[`../.claude/skills/create-pr/SKILL.md`](../.claude/skills/create-pr/SKILL.md) の手順）。不整合は PR 前に同ブランチで修正する。
 - 破壊的スクリプト・push・PR 作成・依存変更は確認プロンプトが出る（[`../.claude/settings.json`](../.claude/settings.json) の `ask`）。
 
