@@ -117,6 +117,11 @@ export default function PostEditor({
     isDirtyRef.current = isDirty;
   }, [isDirty]);
 
+  // 保存に伴う意図的な遷移（新規作成後の redirect 等）中は離脱警告を抑止する。
+  // 本番（workerd）ではこの redirect がハードナビゲーションになり、dirty のまま
+  // unload されて beforeunload が誤発火するため、保存中はガードを一律で無効化する。
+  const isSavingRef = React.useRef(false);
+
   // ---- 保存・公開 ----
   const [isSaving, startSaving] = React.useTransition();
   const [feedback, setFeedback] = React.useState<
@@ -133,6 +138,8 @@ export default function PostEditor({
     }
 
     setFeedback(null);
+    // 保存に伴う遷移では離脱警告を出さない（redirect でこの後 unmount される場合も含む）。
+    isSavingRef.current = true;
     startSaving(async () => {
       const result = await savePost({
         id: initialPost?.id,
@@ -146,10 +153,13 @@ export default function PostEditor({
       // 新規作成成功時は Server Action が編集ページへ redirect するため、
       // ここに戻ってくるのはエラー時か既存記事の更新成功時のみ。
       if (result?.status === "error") {
+        // 保存失敗＝遷移しないので、ガードを再武装する。
+        isSavingRef.current = false;
         setFeedback({ type: "error", text: result.message });
       } else {
         // 保存できたので dirty 基準を現在値に更新（離脱警告を解除）。
         setBaseline({ title, slug, category, content, dateText });
+        isSavingRef.current = false;
         setFeedback(
           result?.status === "success"
             ? { type: "success", text: result.message }
@@ -199,11 +209,13 @@ export default function PostEditor({
     if (!isDirty) return;
 
     function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
       e.preventDefault();
       e.returnValue = "";
     }
 
     function onClickCapture(e: MouseEvent) {
+      if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
       if (
         e.defaultPrevented ||
         e.button !== 0 ||
@@ -256,6 +268,7 @@ export default function PostEditor({
     if (nav) {
       const onNavigate = (e: NavEventLike) => {
         if (e.navigationType !== "traverse" || !e.cancelable) return;
+        if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
         if (isDirtyRef.current && !window.confirm(message)) {
           e.preventDefault(); // 留まる
         }
@@ -267,6 +280,7 @@ export default function PostEditor({
     // フォールバック: sentinel を積んで popstate で受け止める。
     window.history.pushState(null, "", window.location.href);
     const onPopState = () => {
+      if (isSavingRef.current) return; // 保存に伴う遷移は警告しない
       if (isDirtyRef.current && !window.confirm(message)) {
         window.history.pushState(null, "", window.location.href); // 留まる
         return;
