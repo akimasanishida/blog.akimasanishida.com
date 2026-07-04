@@ -777,7 +777,7 @@ function MediaPickerDialog({
           メディアを挿入
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-4xl" aria-describedby={undefined}>
+      <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-4xl" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>メディアを挿入</DialogTitle>
         </DialogHeader>
@@ -787,7 +787,7 @@ function MediaPickerDialog({
             メディアがまだありません。「メディアを追加」からアップロードしてください。
           </p>
         ) : (
-          <div className="grid max-h-[60vh] grid-cols-2 gap-3 overflow-y-auto p-1 sm:grid-cols-3">
+          <div className="grid min-h-0 flex-1 auto-rows-max grid-cols-2 gap-3 overflow-y-auto p-1 sm:grid-cols-3">
             {media.map((item) => {
               const isActive = selected?.key === item.key;
               return (
