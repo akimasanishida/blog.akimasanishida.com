@@ -44,7 +44,13 @@
 
 ### 初回セットアップ（ダッシュボード / 手元作業）
 
-1. **Hyperdrive**（[`hyperdrive`](https://developers.cloudflare.com/hyperdrive/)）を 2 つ作成し ID を [`../wrangler.jsonc`](../wrangler.jsonc) に記入: 本番=prod Neon（top-level）/ staging=dev Neon（`env.staging`）。クエリキャッシュは編集の即時反映のため無効化推奨（`--caching-disabled`）。
+1. **Hyperdrive**（[`hyperdrive`](https://developers.cloudflare.com/hyperdrive/)）を 2 つ作成し ID を [`../wrangler.jsonc`](../wrangler.jsonc) に記入: 本番=prod Neon（top-level）/ staging=dev Neon（`env.staging`）。**クエリキャッシュは無効化する**（`--caching-disabled`）。有効（既定 `max_age` 60秒）だと一覧の SELECT がキャッシュされ、投稿/削除が一覧へ反映されるまで最大 ~60秒遅れる（[#55](https://github.com/akimasanishida/blog.akimasanishida.com/issues/55)）。コネクションプーリングは無効化後も維持される。この設定は Cloudflare リソース側に保持され `wrangler.jsonc` には出ないため、両環境で個別に設定・確認する:
+
+   ```
+   wrangler hyperdrive update <本番ID> --caching-disabled     # prod（blog-neon-prod）
+   wrangler hyperdrive update <stagingID> --caching-disabled  # staging（blog-neon-dev）
+   wrangler hyperdrive get <ID>   # caching.disabled: true を確認
+   ```
 2. **実行時シークレット**を環境ごとに設定（`wrangler secret put <NAME>` は本番、`--env staging` 付きは staging）: `AUTH_SECRET` / `STORAGE_BUCKET_NAME` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_ENDPOINT_URL`。
 3. **GitHub Actions** の設定:
    - リポジトリ Secrets: `CLOUDFLARE_API_TOKEN`（Workers 編集権限）/ `CLOUDFLARE_ACCOUNT_ID`。
