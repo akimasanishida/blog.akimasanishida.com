@@ -35,7 +35,7 @@
 | --- | --- | --- | --- |
 | ローカル | `pnpm dev` | dev Neon（env 変数でエミュレート） | localhost |
 | **PR → main** | [`deploy-preview.yaml`](../.github/workflows/deploy-preview.yaml) が `wrangler deploy --env staging` | dev Neon（`blog-neon-dev`） | `blog-akimasanishida-com-staging.<sub>.workers.dev`（非公開・PR にコメント） |
-| **main マージ** | [`deploy-production.yaml`](../.github/workflows/deploy-production.yaml) が `wrangler deploy` | prod Neon（`blog-neon-prod`） | `blog.akimasanishida.com` |
+| **main マージ** | [`deploy-production.yaml`](../.github/workflows/deploy-production.yaml) が `wrangler deploy` | prod Neon（`blog-neon-prod`） | `blog.akimasanishida.com`（カスタムドメインは [`../wrangler.jsonc`](../wrangler.jsonc) の `routes.custom_domain` で宣言・デプロイ時に自動割り当て） |
 
 - 環境定義は [`../wrangler.jsonc`](../wrangler.jsonc)（top-level=本番、`env.staging`=プレビュー。hyperdrive と secret は環境ごと）。
 - 手動操作も可能: ローカル確認は `pnpm preview`、手動デプロイは `pnpm deploy`（いずれもビルド時に `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` が必要）。
@@ -55,7 +55,16 @@
 3. **GitHub Actions** の設定:
    - リポジトリ Secrets: `CLOUDFLARE_API_TOKEN`（Workers 編集権限）/ `CLOUDFLARE_ACCOUNT_ID`。
    - Environment `production` / `staging` それぞれに、Secret `HYPERDRIVE_LOCAL_CONNECTION_STRING`（各 Neon 接続文字列・末尾 `?sslmode=require`）と Variables `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_STORAGE_PUBLIC_URL`。
-4. カスタムドメイン（`blog.akimasanishida.com`）を**本番 Worker** に割り当て、DNS を Cloudflare へ。
+4. **カスタムドメイン（`blog.akimasanishida.com`）の割り当て**は [`../wrangler.jsonc`](../wrangler.jsonc) の
+   top-level `routes`（`custom_domain: true`）で宣言し、本番デプロイ時に自動プロビジョニングされる
+   （カスタムドメイン作成＋CF DNS レコード生成まで wrangler が実施）。前提として **ゾーン `akimasanishida.com`
+   が Cloudflare にオンボード済み（active）** であること。Workers のカスタムドメインは対象ゾーンが CF の権威 DNS に
+   あることを要求し、サブドメイン単独ゾーンは Enterprise 限定のため、**フルゾーン移管**（NS を Porkbun→Cloudflare）で行う。
+   - 手順: ①Cloudflare に `akimasanishida.com` を Full setup で追加 → ②apex/www/MX/TXT/_dmarc など既存レコードを
+     CF DNS に**再現**（apex・www は Vercel 向き、MX は Porkbun メール転送を維持。`blog` は再現不要＝Worker が作る）
+     → ③Porkbun の NS を Cloudflare の 2 本に変更し active 化を待つ → ④ゾーン active 後に本番デプロイで `blog` が
+     Worker へ接続。API トークンは新ゾーンの DNS 編集＋Workers Routes 編集権限が必要。
+   - `blog` の解決不可窓を最小化するため、NS 変更は②の再現後に行い、active 直後に本番デプロイする。
 
 ### 制約
 
