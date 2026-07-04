@@ -23,6 +23,19 @@
 	//     （blog-neon-dev）。worker 名 blog-akimasanishida-com-staging の workers.dev URL。
 	// main / compatibility_date / assets / flags は環境に継承される（hyperdrive と
 	// secret は継承されないので環境ごとに定義・設定する）。
+	//
+	// 公開ドメインはここで宣言し、デプロイ時に custom_domain を自動プロビジョニングする
+	// （カスタムドメイン作成＋CF DNS レコード生成まで wrangler が行う）。前提として
+	// ゾーン akimasanishida.com が Cloudflare にオンボード済み（active）であること。
+	// staging は workers.dev のままなので routes は付けない。
+	"routes": [
+		{
+			"pattern": "blog.akimasanishida.com",
+			"custom_domain": true
+		}
+	],
+	// 本番 worker は workers.dev から到達不可にし、正規 URL をカスタムドメインへ一本化する。
+	"workers_dev": false,
 	"hyperdrive": [
 		{
 			"binding": "HYPERDRIVE",
@@ -36,7 +49,9 @@
 					"binding": "HYPERDRIVE",
 					"id": "f634613f3281438b96eb70161305b499"
 				}
-			]
+			],
+			"routes": [],
+			"workers_dev": true
 		}
 	}
 }

@@ -1,7 +1,8 @@
 name: Deploy (production)
 
 # main へ push（= PR マージ）で本番 Worker を更新する。
-# 公開ドメイン blog.akimasanishida.com は Cloudflare 側で本番 Worker に割り当てておく。
+# 公開ドメイン blog.akimasanishida.com は wrangler.jsonc の routes（custom_domain）で宣言し、
+# デプロイ時に自動割り当てされる（前提: ゾーン akimasanishida.com が Cloudflare に active）。
 on:
   push:
     branches: ["main"]
