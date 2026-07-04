@@ -49,7 +49,9 @@
 					"binding": "HYPERDRIVE",
 					"id": "f634613f3281438b96eb70161305b499"
 				}
-			]
+			],
+			"routes": [],
+			workers_dev: true
 		}
 	}
 }
