@@ -14,6 +14,7 @@
 | メディア管理 | `/admin/media` | メディア一覧・アップロード・削除・リネーム（認証付き、R2 の `media/` を直接 List） | ✅ | [`app/admin/media/page.tsx`](../app/admin/media/page.tsx) / [`lib/storage.ts`](../lib/storage.ts) |
 | 記事の新規作成 | `/admin/posts/new` | 記事エディタ（認証付き）。タイトル/URL/カテゴリー候補/公開日/本文・メディア挿入・プレビュー・下書き/公開（#9） | ✅ | [`app/admin/posts/new/page.tsx`](../app/admin/posts/new/page.tsx) / [`components/admin/PostEditor.tsx`](../components/admin/PostEditor.tsx) |
 | 記事の編集 | `/admin/posts/[id]` | 記事エディタ（認証付き）。id で実記事をロードし更新（#9） | ✅ | [`app/admin/posts/[id]/page.tsx`](../app/admin/posts/%5Bid%5D/page.tsx) |
+| 投稿完了 | `/admin/posts/[id]/complete` | 公開/更新後の完了画面（記事を見る／管理トップ導線・#54） | ✅ | [`app/admin/posts/[id]/complete/page.tsx`](../app/admin/posts/%5Bid%5D/complete/page.tsx) |
 | アーカイブ（年） | `/archives/[year]` | 指定年の記事 | 🚧 | — |
 | アーカイブ（月） | `/archives/[year]/[month]` | 指定年月の記事 | 🚧 | — |
 | カテゴリー | `/categories/[category]` | 指定カテゴリーの記事 | 🚧 | — |

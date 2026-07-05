@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { auth } from "@/auth";
 import {
   createPost,
@@ -124,14 +124,24 @@ export async function savePost(input: SavePostInput): Promise<PostActionState> {
     revalidatePath(`/posts/${slug}`);
   }
 
-  // 新規作成後は編集ページへ遷移し、以後は更新として扱う。
   // redirect は NEXT_REDIRECT を throw するため try/catch の外で呼ぶ。
-  if (newId) redirect(`/admin/posts/${newId}`);
+  const savedId = input.id ?? newId;
+  // 公開/更新（intent=publish）は完了ページへ。新規は back で新規フォーム（スタレ）に
+  // 戻さないよう replace、既存更新は back で編集画面に戻れるよう push。
+  // 既存更新は文言を出し分けるため ?updated=1 を付ける。
+  if (publish && savedId) {
+    redirect(
+      input.id
+        ? `/admin/posts/${savedId}/complete?updated=1`
+        : `/admin/posts/${savedId}/complete`,
+      input.id ? RedirectType.push : RedirectType.replace,
+    );
+  }
+  // 新規の下書き保存は従来どおり編集ページへ（back のスタレ防止に replace）。
+  if (newId) redirect(`/admin/posts/${newId}`, RedirectType.replace);
 
-  return {
-    status: "success",
-    message: publish ? "公開しました。" : "下書きを保存しました。",
-  };
+  // 既存の下書き保存はページ内フィードバックのまま。
+  return { status: "success", message: "下書きを保存しました。" };
 }
 
 export async function deletePostAction(id: string): Promise<PostActionState> {
