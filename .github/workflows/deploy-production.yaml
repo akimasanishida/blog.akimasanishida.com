@@ -6,6 +6,7 @@ name: Deploy (production)
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 # 本番デプロイは直列化（同時実行で取り違えないように）。
 concurrency:

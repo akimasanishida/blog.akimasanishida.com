@@ -7,7 +7,7 @@
 | 要素 | 本番採用 | 用途 |
 | --- | --- | --- |
 | PostgreSQL | [Neon](https://neon.com/) | posts / users の永続化。Workers からは [Hyperdrive](https://developers.cloudflare.com/hyperdrive/) 経由で接続（[`../lib/db.ts`](../lib/db.ts)）。直結時のみ SSL 必須 |
-| S3 互換ストレージ | [Cloudflare R2](https://developers.cloudflare.com/r2/) | 記事内メディア（画像・動画・音声、`media/` prefix）。`@aws-sdk/client-s3` で操作。管理は `/admin/media`（[routing.md](./routing.md)） |
+| S3 互換ストレージ | [Cloudflare R2](https://developers.cloudflare.com/r2/) | 記事内メディア（画像・動画・音声、`media/` prefix）。`@aws-sdk/client-s3` で操作。管理は `/admin/media`（[routing.md](./routing.md)）。**公開閲覧**はカスタムドメイン `cdn.blog.akimasanishida.com` 経由（`NEXT_PUBLIC_STORAGE_PUBLIC_URL`） |
 | ホスティング | [Cloudflare Workers](https://developers.cloudflare.com/workers/) + [OpenNext](https://opennext.js.org/cloudflare)（`@opennextjs/cloudflare`） | Next.js のデプロイ。設定は [`../wrangler.jsonc`](../wrangler.jsonc) / [`../open-next.config.ts`](../open-next.config.ts) |
 
 ## 環境変数
@@ -17,7 +17,7 @@
 - `DATABASE_URL` — PostgreSQL 接続文字列（ローカル dev/test・`scripts/*.ts` 用。本番 Workers は Hyperdrive バインディング経由のため不要）
 - `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` — ローカルの dev/build で Hyperdrive をエミュレートする接続文字列（`pnpm dev` / `preview` / `deploy` のビルド時に必要）
 - `STORAGE_BUCKET_NAME` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_ENDPOINT_URL` — ストレージ接続
-- `NEXT_PUBLIC_STORAGE_PUBLIC_URL` — 画像の**公開**閲覧 URL（クライアントに露出。秘密を入れない）
+- `NEXT_PUBLIC_STORAGE_PUBLIC_URL` — 画像の**公開**閲覧 URL（クライアントに露出。秘密を入れない）。本番は R2 のカスタムドメイン `https://cdn.blog.akimasanishida.com`（既定の `*.r2.dev` は使わない）。メディアはキーに `media/` prefix を持つため配信 URL は `…/media/<path>` 形式になる
 - `NEXT_PUBLIC_SITE_URL` — サイトの公開 URL。`metadataBase`（OG/canonical の絶対 URL 生成）に使用（クライアントに露出。未設定時は本番ドメインにフォールバック）
 - `AUTH_SECRET` — next-auth の署名鍵
 
@@ -38,7 +38,7 @@
 | **main マージ** | [`deploy-production.yaml`](../.github/workflows/deploy-production.yaml) が `wrangler deploy` | prod Neon（`blog-neon-prod`） | `blog.akimasanishida.com`（カスタムドメインは [`../wrangler.jsonc`](../wrangler.jsonc) の `routes.custom_domain` で宣言・デプロイ時に自動割り当て） |
 
 - 環境定義は [`../wrangler.jsonc`](../wrangler.jsonc)（top-level=本番、`env.staging`=プレビュー。hyperdrive と secret は環境ごと）。
-- 手動操作も可能: ローカル確認は `pnpm preview`、手動デプロイは `pnpm deploy`（いずれもビルド時に `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` が必要）。
+- 手動操作も可能: ローカル確認は `pnpm preview`、手動デプロイは `pnpm deploy`（いずれもビルド時に `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` が必要）。本番は GitHub Actions からも手動実行できる（[`deploy-production.yaml`](../.github/workflows/deploy-production.yaml) の `workflow_dispatch`。Actions タブ または `gh workflow run "Deploy (production)"`）。Variable/Secret 更新後に main を再 push せず再デプロイしたいときに使う。
 - 型生成: `pnpm cf-typegen`（`wrangler.jsonc` から `cloudflare-env.d.ts` を再生成。**git 管理外**・`wrangler.jsonc` 変更後に実行）。
 - 品質ゲートは [`check.yaml`](../.github/workflows/check.yaml)（`pnpm lint` ＋ `pnpm test`）。main をブランチ保護し、これを必須チェックにすることで壊れた本番デプロイを防ぐ。
 
@@ -65,6 +65,10 @@
      → ③Porkbun の NS を Cloudflare の 2 本に変更し active 化を待つ → ④ゾーン active 後に本番デプロイで `blog` が
      Worker へ接続。API トークンは新ゾーンの DNS 編集＋Workers Routes 編集権限が必要。
    - `blog` の解決不可窓を最小化するため、NS 変更は②の再現後に行い、active 直後に本番デプロイする。
+5. **R2 カスタムドメイン（`cdn.blog.akimasanishida.com`）の接続**（[#65](https://github.com/akimasanishida/blog.akimasanishida.com/issues/65)）。本番バケットの公開閲覧を既定の `*.r2.dev` からカスタムドメインへ一本化する。前提はゾーン `akimasanishida.com` が Cloudflare active（上記 4 と同じ）。
+   - 接続: `wrangler r2 bucket domain add <本番バケット名> --domain cdn.blog.akimasanishida.com --zone-id <akimasanishida.com のゾーンID>`（CF が CNAME を自動生成し証明書を発行）。ダッシュボードなら R2 → 対象バケット → Settings → Public access → Custom Domains から追加。
+   - 公開 URL 切替: GitHub の `production` Variable `NEXT_PUBLIC_STORAGE_PUBLIC_URL` を `https://cdn.blog.akimasanishida.com` に更新（step 3）。`NEXT_PUBLIC_*` はビルド時インライン化のため、変更後の**本番デプロイ（main マージ）で反映**される。メディアはキーに `media/` prefix を持つので配信 URL は `https://cdn.blog.akimasanishida.com/media/<path>` になる。
+   - 任意: カスタムドメイン動作確認後に `wrangler r2 bucket dev-url disable <本番バケット名>` で `r2.dev` 公開を無効化し、公開経路をカスタムドメインへ一本化する（本番 Worker の `workers_dev: false` と同じ方針）。
 
 ### 制約
 
