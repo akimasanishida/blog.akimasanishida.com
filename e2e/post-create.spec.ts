@@ -16,9 +16,11 @@ test("新規作成して公開し、公開ページに表示される", async ({
   await page.locator("#slug").fill(slug);
   await page.locator("#content").fill("# 見出し\n\n本文テストです。");
 
-  // 公開（新規作成成功で編集ページへリダイレクトされる）
+  // 公開（新規作成成功で投稿完了ページへリダイレクトされる）
   await page.getByRole("button", { name: "公開", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "記事を編集" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "投稿が完了しました" }),
+  ).toBeVisible();
 
   // 一覧に出現
   await page.goto("/admin");

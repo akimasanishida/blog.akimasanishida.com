@@ -138,10 +138,13 @@ export default function PostEditor({
     }
 
     setFeedback(null);
-    // 離脱警告の抑止は「新規作成（成功時に編集ページへ redirect する）」のときだけ。
-    // 既存記事の更新は redirect せず（router.refresh のみ）誤発火しないので、保存中も
-    // 離脱ガードを効かせたままにする（通信失敗時の未保存離脱を見逃さない）。
-    isSavingRef.current = !initialPost?.id;
+    // 離脱警告の抑止は「保存に伴い redirect する」ときだけ。redirect するのは
+    // 新規保存（成功時に編集ページ / 完了ページへ）と公開・更新（完了ページへ）。
+    // 本番（workerd）ではこの redirect がハードナビゲーションになり、dirty のまま
+    // unload されて beforeunload が誤発火するため、その間だけガードを無効化する。
+    // 既存記事の下書き保存だけは redirect せず（router.refresh のみ）誤発火しないので、
+    // 保存中も離脱ガードを効かせたままにする（通信失敗時の未保存離脱を見逃さない）。
+    isSavingRef.current = !initialPost?.id || intent === "publish";
     startSaving(async () => {
       try {
         const result = await savePost({
@@ -153,8 +156,8 @@ export default function PostEditor({
           publishedAtText: dateText,
           intent,
         });
-        // 新規作成成功時は Server Action が編集ページへ redirect するため、
-        // ここに戻ってくるのはエラー時か既存記事の更新成功時のみ。
+        // 新規保存・公開・更新の成功時は Server Action が別ページへ redirect するため、
+        // ここに戻ってくるのはエラー時か既存記事の下書き保存成功時のみ。
         if (result?.status === "error") {
           // 保存失敗＝遷移しないので、ガードを再武装する。
           isSavingRef.current = false;
