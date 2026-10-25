@@ -477,7 +477,26 @@ function SlugInput({
   excludeId?: string;
   onStatusChange?: (status: SlugStatus) => void;
 }) {
-  const [status, setStatus] = React.useState<SlugStatus>("idle");
+  // サーバー確認の結果。どの入力に対する結果かを併せて持ち、入力と一致しない間は確認中扱い。
+  const [checked, setChecked] = React.useState<{
+    slug: string;
+    excludeId?: string;
+    status: SlugStatus;
+  } | null>(null);
+
+  const slug = value.trim();
+  // 空・不正はサーバーに問い合わせずに描画時に判定する。
+  const needsCheck = slug !== "" && SLUG_PATTERN.test(slug);
+  let status: SlugStatus;
+  if (!slug) {
+    status = "idle";
+  } else if (!needsCheck) {
+    status = "invalid";
+  } else if (checked?.slug === slug && checked.excludeId === excludeId) {
+    status = checked.status;
+  } else {
+    status = "checking";
+  }
 
   // 親（公開ボタンの活性判定）へ最新ステータスを通知。
   React.useEffect(() => {
@@ -485,26 +504,21 @@ function SlugInput({
   }, [status, onStatusChange]);
 
   React.useEffect(() => {
-    const slug = value.trim();
-    if (!slug) {
-      setStatus("idle");
-      return;
-    }
-    if (!SLUG_PATTERN.test(slug)) {
-      setStatus("invalid");
-      return;
-    }
+    if (!needsCheck) return;
 
-    setStatus("checking");
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
         const result = await checkSlugAvailability(slug, excludeId);
         if (cancelled) return;
         // empty/invalid は上で弾いているが、念のため available 以外は taken 扱い。
-        setStatus(result.status === "available" ? "available" : "taken");
+        setChecked({
+          slug,
+          excludeId,
+          status: result.status === "available" ? "available" : "taken",
+        });
       } catch {
-        if (!cancelled) setStatus("idle");
+        if (!cancelled) setChecked({ slug, excludeId, status: "idle" });
       }
     }, SLUG_CHECK_DEBOUNCE_MS);
 
@@ -512,7 +526,7 @@ function SlugInput({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [value, excludeId]);
+  }, [slug, needsCheck, excludeId]);
 
   return (
     <div className="flex items-center gap-2">
@@ -591,10 +605,12 @@ function CategoryAutocomplete({
       c.toLowerCase().includes(query) && c.toLowerCase() !== query,
   );
 
-  // 入力が変わったらハイライトをリセット
-  React.useEffect(() => {
+  // 入力が変わったらハイライトをリセット（effect ではなく描画中に前回値と比較して調整）
+  const [prevValue, setPrevValue] = React.useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     setActiveIndex(-1);
-  }, [value]);
+  }
 
   // 外側クリックで候補を閉じる
   React.useEffect(() => {

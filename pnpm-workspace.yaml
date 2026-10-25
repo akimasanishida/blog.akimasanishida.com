@@ -8,6 +8,11 @@ ignoredBuiltDependencies:
   - unrs-resolver
 onlyBuiltDependencies:
   - workerd
+# サプライチェーン攻撃対策: 公開から 3 日（4320 分）未満のバージョンは導入しない。
+minimumReleaseAge: 4320
+# 脆弱性修正のため、クールダウン期間中でも導入を許可するバージョン（経過後は削除してよい）。
+minimumReleaseAgeExclude:
+  - body-parser@2.4.0
 # dev/ビルドツール経由の推移的依存（本番ランタイム非依存）の脆弱性をパッチ版へ固定。
 # 複数メジャーが同居するものはメジャー指定キーで個別固定する。
 overrides:
@@ -18,7 +23,11 @@ overrides:
   picomatch@2: '2.3.2'
   picomatch@4: '4.0.4'
   brace-expansion@1: '1.1.21'
-  brace-expansion@5: '5.0.11'
+  brace-expansion@5: '5.0.12'
   # miniflare（wrangler 経由）が undici / sharp を脆弱版で完全固定しているため上書き。
   undici@7: '^7.29.1'
   sharp@<0.35.4: '^0.35.4'
+  # express（@opennextjs/aws 経由）の body-parser を脆弱版から引き上げる。
+  body-parser@2: '^2.4.0'
+  # rehype-katex が katex@^0.16 を要求するため、直接依存と同じ修正版に揃える。
+  katex: '^0.19.0'
