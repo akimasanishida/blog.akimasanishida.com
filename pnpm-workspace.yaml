@@ -30,6 +30,8 @@ overrides:
   sharp@<0.35.4: '^0.35.4'
   # express（@opennextjs/aws 経由）の body-parser を脆弱版から引き上げる。
   body-parser@2: '^2.4.0'
+  # @opennextjs/aws → @node-minify/core 経由の glob 10 系（CLI のコマンドインジェクション）。
+  glob@10: '^10.5.0'
   # rehype-katex が katex@^0.16 を要求するため、直接依存と同じ修正版に揃える。
   # TODO: rehype-katex が katex 0.18.2 以上を許容したら削除する。
   katex: '^0.19.0'
