@@ -10,7 +10,8 @@ onlyBuiltDependencies:
   - workerd
 # サプライチェーン攻撃対策: 公開から 3 日（4320 分）未満のバージョンは導入しない。
 minimumReleaseAge: 4320
-# 脆弱性修正のため、クールダウン期間中でも導入を許可するバージョン（経過後は削除してよい）。
+# 脆弱性修正のため、クールダウン期間中でも導入を許可するバージョン。
+# body-parser@2.4.0（2026-10-22T11:39Z 公開）は 2026-10-25T11:39Z（JST 20:39）以降なら削除してよい。
 minimumReleaseAgeExclude:
   - body-parser@2.4.0
 # dev/ビルドツール経由の推移的依存（本番ランタイム非依存）の脆弱性をパッチ版へ固定。
@@ -30,4 +31,5 @@ overrides:
   # express（@opennextjs/aws 経由）の body-parser を脆弱版から引き上げる。
   body-parser@2: '^2.4.0'
   # rehype-katex が katex@^0.16 を要求するため、直接依存と同じ修正版に揃える。
+  # TODO: rehype-katex が katex 0.18.2 以上を許容したら削除する。
   katex: '^0.19.0'
