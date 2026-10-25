@@ -41,3 +41,20 @@ describe("renderMarkdownToHTML — メディア振り分け", () => {
     expect(html).toContain('<figcaption>say "hi"</figcaption>');
   });
 });
+
+// katex は rehype-katex の宣言範囲（^0.16）外へ override しているため、描画が壊れていないことを担保する。
+describe("renderMarkdownToHTML — 数式（KaTeX）", () => {
+  it("インライン数式を KaTeX で描画する", async () => {
+    const html = await renderMarkdownToHTML("質量とエネルギー $E=mc^2$ の関係");
+    expect(html).toContain('class="katex"');
+    expect(html).not.toContain("katex-error");
+  });
+
+  it("ディスプレイ数式を katex-display で描画する", async () => {
+    const html = await renderMarkdownToHTML(
+      "$$\n\\int_0^1 f(x)\\,dx = \\frac{a}{b}\n$$",
+    );
+    expect(html).toContain("katex-display");
+    expect(html).not.toContain("katex-error");
+  });
+});
